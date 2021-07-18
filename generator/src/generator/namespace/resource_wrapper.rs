@@ -95,7 +95,7 @@ pub(super) fn generate(
     outln!(out, "impl<'c, C: X11Connection> {}<'c, C>", wrapper);
     outln!(out, "{{");
     out.indented(|out| {
-        for create_request in info.create_requests.iter().flatten() {
+        for create_request in info.create_requests.iter() {
             generate_creator(
                 generator,
                 out,
@@ -128,7 +128,7 @@ pub(super) fn generate(
     );
     out.indented(|out| {
         outln!(out, "fn drop(&mut self) {{");
-        outln!(out.indent(), "let _ = (self.0).{}(self.1);", free_function);
+        outln!(out.indent(), "let _ = {}(self.0, self.1);", free_function);
         outln!(out, "}}");
     });
     outln!(out, "}}");
@@ -211,7 +211,6 @@ fn generate_creator(
             }
             xcbdefs::FieldDef::List(list_field) => {
                 let field_name = to_rust_variable_name(&list_field.name);
-                assert!(generator.rust_value_type_is_u8(&list_field.element_type));
                 let element_type =
                     generator.field_value_type_to_rust_type(&list_field.element_type);
                 let field_type = if let Some(list_len) = list_field.length() {
@@ -290,7 +289,7 @@ fn generate_creator(
     );
     outln!(
         out.indent(),
-        "let cookie = conn.{}({})?;",
+        "let cookie = {}(conn, {})?;",
         function_name,
         forward_args_with_resource.join(", "),
     );

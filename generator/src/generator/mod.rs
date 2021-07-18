@@ -221,6 +221,6 @@ struct CreateInfo<'a> {
 
 struct ResourceInfo<'a> {
     resource_name: &'a str,
-    create_requests: [Option<CreateInfo<'a>>; 2],
+    create_requests: &'a [CreateInfo<'a>],
     free_request: &'a str,
 }
