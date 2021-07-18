@@ -27678,7 +27678,42 @@ impl<'c, C: X11Connection> PixmapWrapper<'c, C>
     {
         Ok(Self::composite_name_window_pixmap_and_get_cookie(conn, window)?.0)
     }
+
+    /// Create a new Pixmap and return a Pixmap wrapper and a cookie.
+    ///
+    /// This is a thin wrapper around [super::shm::create_pixmap] that allocates an id for the Pixmap.
+    /// This function returns the resulting `PixmapWrapper` that owns the created Pixmap and frees
+    /// it in `Drop`. This also returns a `VoidCookie` that comes from the call to
+    /// [super::shm::create_pixmap].
+    ///
+    /// Errors can come from the call to [X11Connection::generate_id] or [super::shm::create_pixmap].
+    #[cfg(feature = "shm")]
+    pub fn shm_create_pixmap_and_get_cookie(conn: &'c C, pid: Pixmap, drawable: Drawable, width: u16, height: u16, depth: u8, shmseg: shm::Seg, offset: u32) -> Result<(Self, VoidCookie<'c, C>), ReplyOrIdError>
+    {
+        let pixmap = conn.generate_id()?;
+        let cookie = super::shm::create_pixmap(conn, pid, drawable, width, height, depth, shmseg, offset)?;
+        Ok((Self::for_pixmap(conn, pixmap), cookie))
+    }
+
+    /// Create a new Pixmap and return a Pixmap wrapper
+    ///
+    /// This is a thin wrapper around [super::shm::create_pixmap] that allocates an id for the Pixmap.
+    /// This function returns the resulting `PixmapWrapper` that owns the created Pixmap and frees
+    /// it in `Drop`.
+    ///
+    /// Errors can come from the call to [X11Connection::generate_id] or [super::shm::create_pixmap].
+    #[cfg(feature = "shm")]
+    pub fn shm_create_pixmap(conn: &'c C, pid: Pixmap, drawable: Drawable, width: u16, height: u16, depth: u8, shmseg: shm::Seg, offset: u32) -> Result<Self, ReplyOrIdError>
+    {
+        Ok(Self::shm_create_pixmap_and_get_cookie(conn, pid, drawable, width, height, depth, shmseg, offset)?.0)
+    }
 }
+#[cfg(feature = "composite")]
+#[allow(unused_imports)]
+use super::composite;
+#[cfg(feature = "shm")]
+#[allow(unused_imports)]
+use super::shm;
 
 impl<C: RequestConnection> From<&PixmapWrapper<'_, C>> for Pixmap {
     fn from(from: &PixmapWrapper<'_, C>) -> Self {
@@ -28083,7 +28118,68 @@ impl<'c, C: X11Connection> CursorWrapper<'c, C>
     {
         Ok(Self::create_glyph_cursor_and_get_cookie(conn, source_font, mask_font, source_char, mask_char, fore_red, fore_green, fore_blue, back_red, back_green, back_blue)?.0)
     }
+
+    /// Create a new Cursor and return a Cursor wrapper and a cookie.
+    ///
+    /// This is a thin wrapper around [super::render::create_cursor] that allocates an id for the Cursor.
+    /// This function returns the resulting `CursorWrapper` that owns the created Cursor and frees
+    /// it in `Drop`. This also returns a `VoidCookie` that comes from the call to
+    /// [super::render::create_cursor].
+    ///
+    /// Errors can come from the call to [X11Connection::generate_id] or [super::render::create_cursor].
+    #[cfg(feature = "render")]
+    pub fn render_create_cursor_and_get_cookie(conn: &'c C, source: render::Picture, x: u16, y: u16) -> Result<(Self, VoidCookie<'c, C>), ReplyOrIdError>
+    {
+        let cid = conn.generate_id()?;
+        let cookie = super::render::create_cursor(conn, cid, source, x, y)?;
+        Ok((Self::for_cursor(conn, cid), cookie))
+    }
+
+    /// Create a new Cursor and return a Cursor wrapper
+    ///
+    /// This is a thin wrapper around [super::render::create_cursor] that allocates an id for the Cursor.
+    /// This function returns the resulting `CursorWrapper` that owns the created Cursor and frees
+    /// it in `Drop`.
+    ///
+    /// Errors can come from the call to [X11Connection::generate_id] or [super::render::create_cursor].
+    #[cfg(feature = "render")]
+    pub fn render_create_cursor(conn: &'c C, source: render::Picture, x: u16, y: u16) -> Result<Self, ReplyOrIdError>
+    {
+        Ok(Self::render_create_cursor_and_get_cookie(conn, source, x, y)?.0)
+    }
+
+    /// Create a new Cursor and return a Cursor wrapper and a cookie.
+    ///
+    /// This is a thin wrapper around [super::render::create_anim_cursor] that allocates an id for the Cursor.
+    /// This function returns the resulting `CursorWrapper` that owns the created Cursor and frees
+    /// it in `Drop`. This also returns a `VoidCookie` that comes from the call to
+    /// [super::render::create_anim_cursor].
+    ///
+    /// Errors can come from the call to [X11Connection::generate_id] or [super::render::create_anim_cursor].
+    #[cfg(feature = "render")]
+    pub fn render_create_anim_cursor_and_get_cookie(conn: &'c C, cursors: &[render::Animcursorelt]) -> Result<(Self, VoidCookie<'c, C>), ReplyOrIdError>
+    {
+        let cid = conn.generate_id()?;
+        let cookie = super::render::create_anim_cursor(conn, cid, cursors)?;
+        Ok((Self::for_cursor(conn, cid), cookie))
+    }
+
+    /// Create a new Cursor and return a Cursor wrapper
+    ///
+    /// This is a thin wrapper around [super::render::create_anim_cursor] that allocates an id for the Cursor.
+    /// This function returns the resulting `CursorWrapper` that owns the created Cursor and frees
+    /// it in `Drop`.
+    ///
+    /// Errors can come from the call to [X11Connection::generate_id] or [super::render::create_anim_cursor].
+    #[cfg(feature = "render")]
+    pub fn render_create_anim_cursor(conn: &'c C, cursors: &[render::Animcursorelt]) -> Result<Self, ReplyOrIdError>
+    {
+        Ok(Self::render_create_anim_cursor_and_get_cookie(conn, cursors)?.0)
+    }
 }
+#[cfg(feature = "render")]
+#[allow(unused_imports)]
+use super::render;
 
 impl<C: RequestConnection> From<&CursorWrapper<'_, C>> for Cursor {
     fn from(from: &CursorWrapper<'_, C>) -> Self {

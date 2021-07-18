@@ -33,13 +33,10 @@ const EXTENSION_RESOURCES: [(&str, &[ResourceInfo<'_>]); 13] = [(
                      created_argument: "pixmap",
                  },
                  */
-                 /*
-                  * Missing "use" of shm
                  CreateInfo {
                      request_name: "shm:CreatePixmap",
                      created_argument: "pixmap",
                  },
-                 */
             ],
             free_request: "FreePixmap",
         },
@@ -94,7 +91,6 @@ const EXTENSION_RESOURCES: [(&str, &[ResourceInfo<'_>]); 13] = [(
                     request_name: "CreateGlyphCursor",
                     created_argument: "cid",
                 },
-                /* Missing "use" of render
                  CreateInfo {
                      request_name: "render:CreateCursor",
                      created_argument: "cid",
@@ -103,7 +99,6 @@ const EXTENSION_RESOURCES: [(&str, &[ResourceInfo<'_>]); 13] = [(
                      request_name: "render:CreateAnimCursor",
                      created_argument: "cid",
                  },
-                 */
             ],
             free_request: "FreeCursor",
         },

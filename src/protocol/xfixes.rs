@@ -3784,6 +3784,9 @@ impl<'c, C: X11Connection> RegionWrapper<'c, C>
         Ok(Self::composite_create_region_from_border_clip_and_get_cookie(conn, window)?.0)
     }
 }
+#[cfg(feature = "composite")]
+#[allow(unused_imports)]
+use super::composite;
 
 impl<C: RequestConnection> From<&RegionWrapper<'_, C>> for Region {
     fn from(from: &RegionWrapper<'_, C>) -> Self {

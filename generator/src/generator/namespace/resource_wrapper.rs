@@ -1,3 +1,4 @@
+use std::collections::BTreeSet;
 use std::rc::Rc;
 
 use xcbgen::defs as xcbdefs;
@@ -92,6 +93,8 @@ pub(super) fn generate(
     outln!(out, "}}");
     outln!(out, "");
 
+    let mut uses = BTreeSet::new();
+
     outln!(out, "impl<'c, C: X11Connection> {}<'c, C>", wrapper);
     outln!(out, "{{");
     out.indented(|out| {
@@ -103,10 +106,19 @@ pub(super) fn generate(
                 info.resource_name,
                 &wrapper,
                 &lower_name,
+                &mut uses,
             );
         }
     });
     outln!(out, "}}");
+    for (feature, header) in uses.iter() {
+        // There might be no import of the other extension otherwise
+        if let Some(feature) = feature {
+            outln!(out, "#[cfg(feature = \"{}\")]", feature);
+        }
+        outln!(out, "#[allow(unused_imports)]");
+        outln!(out, "use super::{};", header);
+    }
     outln!(out, "");
     outln!(
         out,
@@ -141,6 +153,7 @@ fn generate_creator(
     resource_name: &str,
     wrapper_name: &str,
     lower_name: &str,
+    uses: &mut BTreeSet<(Option<String>, String)>,
 ) {
     let (request_ext, request_name) = match request_info.request_name.split_once(':') {
         None => (None, request_info.request_name),
@@ -169,6 +182,10 @@ fn generate_creator(
     );
     let request_fields = request_def.fields.borrow();
     let deducible_fields = gather_deducible_fields(&*request_fields);
+
+    if request_ext.is_some() {
+        uses.insert((request_ext.map(|_| request_ns.header.clone()), request_ns.header.clone()));
+    }
 
     let mut letter_iter = b'A'..=b'Z';
 
