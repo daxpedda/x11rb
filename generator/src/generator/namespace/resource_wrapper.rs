@@ -220,7 +220,7 @@ fn generate_creator(
                 wheres.push(where_);
                 (fd_field.name.clone(), generic_param)
             }
-            xcbdefs::FieldDef::FdList(_) => unimplemented!(),
+            xcbdefs::FieldDef::FdList(fd_list_field) => (fd_list_field.name.clone(), "Vec<RawFdContainer>".to_string()),
             xcbdefs::FieldDef::Normal(normal_field) => {
                 let rust_field_name = to_rust_variable_name(&normal_field.name);
                 let rust_field_type = generator.field_value_type_to_rust_type(&normal_field.type_);

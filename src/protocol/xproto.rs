@@ -27714,6 +27714,35 @@ impl<'c, C: X11Connection> PixmapWrapper<'c, C>
 
     /// Create a new Pixmap and return a Pixmap wrapper and a cookie.
     ///
+    /// This is a thin wrapper around [super::dri3::pixmap_from_buffers] that allocates an id for the Pixmap.
+    /// This function returns the resulting `PixmapWrapper` that owns the created Pixmap and frees
+    /// it in `Drop`. This also returns a `VoidCookie` that comes from the call to
+    /// [super::dri3::pixmap_from_buffers].
+    ///
+    /// Errors can come from the call to [X11Connection::generate_id] or [super::dri3::pixmap_from_buffers].
+    #[cfg(feature = "dri3")]
+    pub fn dri3_pixmap_from_buffers_and_get_cookie(conn: &'c C, window: Window, width: u16, height: u16, stride0: u32, offset0: u32, stride1: u32, offset1: u32, stride2: u32, offset2: u32, stride3: u32, offset3: u32, depth: u8, bpp: u8, modifier: u64, buffers: Vec<RawFdContainer>) -> Result<(Self, VoidCookie<'c, C>), ReplyOrIdError>
+    {
+        let pixmap = conn.generate_id()?;
+        let cookie = super::dri3::pixmap_from_buffers(conn, pixmap, window, width, height, stride0, offset0, stride1, offset1, stride2, offset2, stride3, offset3, depth, bpp, modifier, buffers)?;
+        Ok((Self::for_pixmap(conn, pixmap), cookie))
+    }
+
+    /// Create a new Pixmap and return a Pixmap wrapper
+    ///
+    /// This is a thin wrapper around [super::dri3::pixmap_from_buffers] that allocates an id for the Pixmap.
+    /// This function returns the resulting `PixmapWrapper` that owns the created Pixmap and frees
+    /// it in `Drop`.
+    ///
+    /// Errors can come from the call to [X11Connection::generate_id] or [super::dri3::pixmap_from_buffers].
+    #[cfg(feature = "dri3")]
+    pub fn dri3_pixmap_from_buffers(conn: &'c C, window: Window, width: u16, height: u16, stride0: u32, offset0: u32, stride1: u32, offset1: u32, stride2: u32, offset2: u32, stride3: u32, offset3: u32, depth: u8, bpp: u8, modifier: u64, buffers: Vec<RawFdContainer>) -> Result<Self, ReplyOrIdError>
+    {
+        Ok(Self::dri3_pixmap_from_buffers_and_get_cookie(conn, window, width, height, stride0, offset0, stride1, offset1, stride2, offset2, stride3, offset3, depth, bpp, modifier, buffers)?.0)
+    }
+
+    /// Create a new Pixmap and return a Pixmap wrapper and a cookie.
+    ///
     /// This is a thin wrapper around [super::shm::create_pixmap] that allocates an id for the Pixmap.
     /// This function returns the resulting `PixmapWrapper` that owns the created Pixmap and frees
     /// it in `Drop`. This also returns a `VoidCookie` that comes from the call to

@@ -26,13 +26,10 @@ const EXTENSION_RESOURCES: [(&str, &[ResourceInfo<'_>]); 13] = [(
                      request_name: "dri3:PixmapFromBuffer",
                      created_argument: "pixmap",
                  },
-                 /*
-                  * Has FD-stuff
                  CreateInfo {
                      request_name: "dri3:PixmapFromBuffers",
                      created_argument: "pixmap",
                  },
-                 */
                  CreateInfo {
                      request_name: "shm:CreatePixmap",
                      created_argument: "pixmap",
