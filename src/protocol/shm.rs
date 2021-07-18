@@ -1065,6 +1065,37 @@ impl<'c, C: X11Connection> SegWrapper<'c, C>
     {
         Ok(Self::attach_and_get_cookie(conn, shmid, read_only)?.0)
     }
+
+    /// Create a new Seg and return a Seg wrapper and a cookie.
+    ///
+    /// This is a thin wrapper around [attach_fd] that allocates an id for the Seg.
+    /// This function returns the resulting `SegWrapper` that owns the created Seg and frees
+    /// it in `Drop`. This also returns a `VoidCookie` that comes from the call to
+    /// [attach_fd].
+    ///
+    /// Errors can come from the call to [X11Connection::generate_id] or [attach_fd].
+    pub fn attach_fd_and_get_cookie<A>(conn: &'c C, shm_fd: A, read_only: bool) -> Result<(Self, VoidCookie<'c, C>), ReplyOrIdError>
+    where
+        A: Into<RawFdContainer>,
+    {
+        let shmseg = conn.generate_id()?;
+        let cookie = attach_fd(conn, shmseg, shm_fd, read_only)?;
+        Ok((Self::for_seg(conn, shmseg), cookie))
+    }
+
+    /// Create a new Seg and return a Seg wrapper
+    ///
+    /// This is a thin wrapper around [attach_fd] that allocates an id for the Seg.
+    /// This function returns the resulting `SegWrapper` that owns the created Seg and frees
+    /// it in `Drop`.
+    ///
+    /// Errors can come from the call to [X11Connection::generate_id] or [attach_fd].
+    pub fn attach_fd<A>(conn: &'c C, shm_fd: A, read_only: bool) -> Result<Self, ReplyOrIdError>
+    where
+        A: Into<RawFdContainer>,
+    {
+        Ok(Self::attach_fd_and_get_cookie(conn, shm_fd, read_only)?.0)
+    }
 }
 
 impl<C: RequestConnection> From<&SegWrapper<'_, C>> for Seg {

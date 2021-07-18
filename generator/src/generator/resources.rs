@@ -22,12 +22,12 @@ const EXTENSION_RESOURCES: [(&str, &[ResourceInfo<'_>]); 13] = [(
                      request_name: "composite:NameWindowPixmap",
                      created_argument: "pixmap",
                  },
-                 /*
-                  * Has FD-stuff
                  CreateInfo {
                      request_name: "dri3:PixmapFromBuffer",
                      created_argument: "pixmap",
                  },
+                 /*
+                  * Has FD-stuff
                  CreateInfo {
                      request_name: "dri3:PixmapFromBuffers",
                      created_argument: "pixmap",
@@ -208,12 +208,12 @@ const EXTENSION_RESOURCES: [(&str, &[ResourceInfo<'_>]); 13] = [(
                  request_name: "Attach",
                  created_argument: "shmseg",
              },
-             /*
-              * FD stuff
              CreateInfo {
                  request_name: "AttachFd",
                  created_argument: "shmseg",
              },
+             /*
+              * FD stuff
              CreateInfo {
                  request_name: "CreateSegment",
                  created_argument: "shmseg",
@@ -251,13 +251,10 @@ const EXTENSION_RESOURCES: [(&str, &[ResourceInfo<'_>]); 13] = [(
                  request_name: "CreateFence",
                  created_argument: "fence",
              },
-             /*
-              * Request contains a FD
              CreateInfo {
                  request_name: "dri3:FenceFromFD",
                  created_argument: "fence",
              },
-             */
          ],
          free_request: "DestroyFence",
      },

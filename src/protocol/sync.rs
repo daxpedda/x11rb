@@ -2772,7 +2772,43 @@ impl<'c, C: X11Connection> FenceWrapper<'c, C>
     {
         Ok(Self::create_fence_and_get_cookie(conn, drawable, initially_triggered)?.0)
     }
+
+    /// Create a new Fence and return a Fence wrapper and a cookie.
+    ///
+    /// This is a thin wrapper around [super::dri3::fence_from_fd] that allocates an id for the Fence.
+    /// This function returns the resulting `FenceWrapper` that owns the created Fence and frees
+    /// it in `Drop`. This also returns a `VoidCookie` that comes from the call to
+    /// [super::dri3::fence_from_fd].
+    ///
+    /// Errors can come from the call to [X11Connection::generate_id] or [super::dri3::fence_from_fd].
+    #[cfg(feature = "dri3")]
+    pub fn dri3_fence_from_fd_and_get_cookie<A>(conn: &'c C, drawable: xproto::Drawable, initially_triggered: bool, fence_fd: A) -> Result<(Self, VoidCookie<'c, C>), ReplyOrIdError>
+    where
+        A: Into<RawFdContainer>,
+    {
+        let fence = conn.generate_id()?;
+        let cookie = super::dri3::fence_from_fd(conn, drawable, fence, initially_triggered, fence_fd)?;
+        Ok((Self::for_fence(conn, fence), cookie))
+    }
+
+    /// Create a new Fence and return a Fence wrapper
+    ///
+    /// This is a thin wrapper around [super::dri3::fence_from_fd] that allocates an id for the Fence.
+    /// This function returns the resulting `FenceWrapper` that owns the created Fence and frees
+    /// it in `Drop`.
+    ///
+    /// Errors can come from the call to [X11Connection::generate_id] or [super::dri3::fence_from_fd].
+    #[cfg(feature = "dri3")]
+    pub fn dri3_fence_from_fd<A>(conn: &'c C, drawable: xproto::Drawable, initially_triggered: bool, fence_fd: A) -> Result<Self, ReplyOrIdError>
+    where
+        A: Into<RawFdContainer>,
+    {
+        Ok(Self::dri3_fence_from_fd_and_get_cookie(conn, drawable, initially_triggered, fence_fd)?.0)
+    }
 }
+#[cfg(feature = "dri3")]
+#[allow(unused_imports)]
+use super::dri3;
 
 impl<C: RequestConnection> From<&FenceWrapper<'_, C>> for Fence {
     fn from(from: &FenceWrapper<'_, C>) -> Self {
