@@ -147,7 +147,8 @@ const EXTENSION_RESOURCES: [(&str, &[ResourceInfo<'_>]); 13] = [(
      */
     ]),
     ("glx", &[
-     // There are lots of candidates, but this being GLX I doubt anyone will ever use this
+     // There are lots of candidates, but this being GLX I doubt anyone will ever use this.
+     // My guesses: CreateGLXPixmap, CreatePixmap, CreateNewContext, CreatePbuffer, CreateWindow
     ]),
     ("record", &[
      ResourceInfo {
