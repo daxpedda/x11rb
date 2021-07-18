@@ -8,7 +8,7 @@ pub(super) fn for_extension(extension: &str) -> &'static [ResourceInfo<'static>]
         .unwrap_or(&[])
 }
 
-const EXTENSION_RESOURCES: [(&str, &[ResourceInfo<'_>]); 14] = [(
+const EXTENSION_RESOURCES: [(&str, &[ResourceInfo<'_>]); 13] = [(
     "xproto",
     &[
         ResourceInfo {
@@ -18,6 +18,28 @@ const EXTENSION_RESOURCES: [(&str, &[ResourceInfo<'_>]); 14] = [(
                     request_name: "CreatePixmap",
                     created_argument: "pid",
                 },
+                 CreateInfo {
+                     request_name: "composite:NameWindowPixmap",
+                     created_argument: "pixmap",
+                 },
+                 /*
+                  * Has FD-stuff
+                 CreateInfo {
+                     request_name: "dri3:PixmapFromBuffer",
+                     created_argument: "pixmap",
+                 },
+                 CreateInfo {
+                     request_name: "dri3:PixmapFromBuffers",
+                     created_argument: "pixmap",
+                 },
+                 */
+                 /*
+                  * Missing "use" of shm
+                 CreateInfo {
+                     request_name: "shm:CreatePixmap",
+                     created_argument: "pixmap",
+                 },
+                 */
             ],
             free_request: "FreePixmap",
         },
@@ -72,6 +94,16 @@ const EXTENSION_RESOURCES: [(&str, &[ResourceInfo<'_>]); 14] = [(
                     request_name: "CreateGlyphCursor",
                     created_argument: "cid",
                 },
+                /* Missing "use" of render
+                 CreateInfo {
+                     request_name: "render:CreateCursor",
+                     created_argument: "cid",
+                 },
+                 CreateInfo {
+                     request_name: "render:CreateAnimCursor",
+                     created_argument: "cid",
+                 },
+                 */
             ],
             free_request: "FreeCursor",
         },
@@ -79,28 +111,9 @@ const EXTENSION_RESOURCES: [(&str, &[ResourceInfo<'_>]); 14] = [(
     ),
     ("composite", &[
      /*
+      * Resource is from another namespace, but needs a special free
      ResourceInfo {
-         resource_name: "Region",
-         create_requests: &[
-             CreateInfo {
-                 request_name: "CreateRegionFromBorderClip",
-                 created_argument: "region",
-             },
-         ],
-         free_request: "FreeRegion",
-     },
-     ResourceInfo {
-         resource_name: "Pixmap",
-         create_requests: &[
-             CreateInfo {
-                 request_name: "NameWindowPixmap",
-                 created_argument: "pixmap",
-             },
-         ],
-         free_request: "FreePixmap",
-     },
-     ResourceInfo {
-         resource_name: "Window",
+         resource_name: "xproto:Window",
          create_requests: &[
              CreateInfo {
                  request_name: "GetOverlayWindow",
@@ -125,6 +138,7 @@ const EXTENSION_RESOURCES: [(&str, &[ResourceInfo<'_>]); 14] = [(
     ]),
     ("dri2", &[
      /*
+      * DRAWABLE more or less comes from xproto?!?
      ResourceInfo {
          resource_name: "DRAWABLE",
          create_requests: &[
@@ -137,41 +151,12 @@ const EXTENSION_RESOURCES: [(&str, &[ResourceInfo<'_>]); 14] = [(
      },
      */
     ]),
-    ("dri3", &[
-     /*
-     ResourceInfo {
-         resource_name: "Pixmap",
-         create_requests: &[
-             CreateInfo {
-                 request_name: "PixmapFromBuffer",
-                 created_argument: "pixmap",
-             },
-             CreateInfo {
-                 request_name: "PixmapFromBuffers",
-                 created_argument: "pixmap",
-             },
-         ],
-         free_request: "FreePixmap",
-     },
-     ResourceInfo {
-         resource_name: "sync:XXX Fence or so",
-         create_requests: &[
-             CreateInfo {
-                 request_name: "FenceFromFD",
-                 created_argument: "fence",
-             },
-         ],
-         free_request: "sync:DestroyFence",
-     },
-     */
-    ]),
     ("glx", &[
      // There are lots of candidates, but this being GLX I doubt anyone will ever use this
     ]),
     ("record", &[
-     /*
      ResourceInfo {
-         resource_name: "CONTEXT",
+         resource_name: "Context",
          create_requests: &[
              CreateInfo {
                  request_name: "CreateContext",
@@ -180,7 +165,6 @@ const EXTENSION_RESOURCES: [(&str, &[ResourceInfo<'_>]); 14] = [(
          ],
          free_request: "FreeContext",
      },
-     */
     ]),
     ("render", &[
      ResourceInfo {
@@ -219,22 +203,6 @@ const EXTENSION_RESOURCES: [(&str, &[ResourceInfo<'_>]); 14] = [(
          ],
          free_request: "FreeGlyphSet",
      },
-     /*
-     ResourceInfo {
-         resource_name: "xproto:cursor",
-         create_requests: &[
-             CreateInfo {
-                 request_name: "CreateCursor",
-                 created_argument: "cid",
-             },
-             CreateInfo {
-                 request_name: "CreateAnimCursor",
-                 created_argument: "cid",
-             },
-         ],
-         free_request: "FreeCursor",
-     },
-     */
     ]),
     ("shm", &[
      ResourceInfo {
@@ -245,12 +213,11 @@ const EXTENSION_RESOURCES: [(&str, &[ResourceInfo<'_>]); 14] = [(
                  created_argument: "shmseg",
              },
              /*
+              * FD stuff
              CreateInfo {
                  request_name: "AttachFd",
                  created_argument: "shmseg",
              },
-             */
-             /*
              CreateInfo {
                  request_name: "CreateSegment",
                  created_argument: "shmseg",
@@ -259,18 +226,6 @@ const EXTENSION_RESOURCES: [(&str, &[ResourceInfo<'_>]); 14] = [(
          ],
          free_request: "Detach",
      },
-     /*
-     ResourceInfo {
-         resource_name: "xproto:Pixmap",
-         create_requests: &[
-             CreateInfo {
-                 request_name: "CreatePixmap",
-                 created_argument: "pixmap",
-             },
-         ],
-         free_request: "FreePixmap",
-     },
-     */
     ]),
     ("sync", &[
      ResourceInfo {
@@ -300,6 +255,13 @@ const EXTENSION_RESOURCES: [(&str, &[ResourceInfo<'_>]); 14] = [(
                  request_name: "CreateFence",
                  created_argument: "fence",
              },
+             /*
+              * Request contains a FD
+             CreateInfo {
+                 request_name: "dri3:FenceFromFD",
+                 created_argument: "fence",
+             },
+             */
          ],
          free_request: "DestroyFence",
      },
@@ -350,6 +312,10 @@ const EXTENSION_RESOURCES: [(&str, &[ResourceInfo<'_>]); 14] = [(
              },
              CreateInfo {
                  request_name: "CreateRegionFromPicture",
+                 created_argument: "region",
+             },
+             CreateInfo {
+                 request_name: "composite:CreateRegionFromBorderClip",
                  created_argument: "region",
              },
          ],

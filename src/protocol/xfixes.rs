@@ -3754,6 +3754,35 @@ impl<'c, C: X11Connection> RegionWrapper<'c, C>
     {
         Ok(Self::create_region_from_picture_and_get_cookie(conn, picture)?.0)
     }
+
+    /// Create a new Region and return a Region wrapper and a cookie.
+    ///
+    /// This is a thin wrapper around [super::composite::create_region_from_border_clip] that allocates an id for the Region.
+    /// This function returns the resulting `RegionWrapper` that owns the created Region and frees
+    /// it in `Drop`. This also returns a `VoidCookie` that comes from the call to
+    /// [super::composite::create_region_from_border_clip].
+    ///
+    /// Errors can come from the call to [X11Connection::generate_id] or [super::composite::create_region_from_border_clip].
+    #[cfg(feature = "composite")]
+    pub fn composite_create_region_from_border_clip_and_get_cookie(conn: &'c C, window: xproto::Window) -> Result<(Self, VoidCookie<'c, C>), ReplyOrIdError>
+    {
+        let region = conn.generate_id()?;
+        let cookie = super::composite::create_region_from_border_clip(conn, region, window)?;
+        Ok((Self::for_region(conn, region), cookie))
+    }
+
+    /// Create a new Region and return a Region wrapper
+    ///
+    /// This is a thin wrapper around [super::composite::create_region_from_border_clip] that allocates an id for the Region.
+    /// This function returns the resulting `RegionWrapper` that owns the created Region and frees
+    /// it in `Drop`.
+    ///
+    /// Errors can come from the call to [X11Connection::generate_id] or [super::composite::create_region_from_border_clip].
+    #[cfg(feature = "composite")]
+    pub fn composite_create_region_from_border_clip(conn: &'c C, window: xproto::Window) -> Result<Self, ReplyOrIdError>
+    {
+        Ok(Self::composite_create_region_from_border_clip_and_get_cookie(conn, window)?.0)
+    }
 }
 
 impl<C: RequestConnection> From<&RegionWrapper<'_, C>> for Region {

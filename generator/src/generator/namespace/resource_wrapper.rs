@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use xcbgen::defs as xcbdefs;
 
-use super::super::{camel_case_to_lower_snake, CreateInfo, ResourceInfo};
+use super::super::{camel_case_to_lower_snake, ext_has_feature, CreateInfo, ResourceInfo};
 use super::{
     gather_deducible_fields, to_rust_type_name, to_rust_variable_name, NamespaceGenerator, Output,
 };
@@ -142,10 +142,21 @@ fn generate_creator(
     wrapper_name: &str,
     lower_name: &str,
 ) {
-    let request_name = request_info.request_name;
+    let (request_ext, request_name) = match request_info.request_name.split_once(':') {
+        None => (None, request_info.request_name),
+        Some((ext_name, request_name)) => (Some(ext_name), request_name),
+    };
+    let request_ns = request_ext.map(|ext_name| generator.module.namespace(ext_name).unwrap_or_else(|| {
+            panic!(
+                "Could not find namespace {} for resolving request name {}",
+                ext_name,
+                request_info.request_name,
+            );
+    }));
+    let has_feature = request_ns.as_ref().map(|ns| ext_has_feature(&ns.header)).unwrap_or(false);
+    let request_ns = request_ns.as_ref().map(|ns| &**ns).unwrap_or(generator.ns);
     let request_def = Rc::clone(
-        generator
-            .ns
+        request_ns
             .request_defs
             .borrow()
             .get(request_name)
@@ -161,7 +172,11 @@ fn generate_creator(
 
     let mut letter_iter = b'A'..=b'Z';
 
-    let function_name = camel_case_to_lower_snake(&request_def.name);
+    let function_raw_name = camel_case_to_lower_snake(&request_def.name);
+    let (function_raw_name, function_name) = match request_ext {
+        Some(_) => (format!("{}_{}", request_ns.header, function_raw_name), format!("super::{}::{}", request_ns.header, function_raw_name)),
+        None => (function_raw_name.clone(), function_raw_name),
+    };
     let mut function_args = "conn: &'c C".to_string();
     let mut forward_args_with_resource = Vec::new();
     let mut forward_args_without_resource = Vec::new();
@@ -273,10 +288,13 @@ fn generate_creator(
         "/// Errors can come from the call to [X11Connection::generate_id] or [{}].",
         function_name,
     );
+    if has_feature {
+        outln!(out, "#[cfg(feature = \"{}\")]", request_ns.header);
+    }
     outln!(
         out,
         "pub fn {}_and_get_cookie{}({}) -> Result<(Self, VoidCookie<'c, C>), ReplyOrIdError>",
-        function_name,
+        function_raw_name,
         generics_decl,
         function_args,
     );
@@ -327,10 +345,13 @@ fn generate_creator(
         "/// Errors can come from the call to [X11Connection::generate_id] or [{}].",
         function_name,
     );
+    if has_feature {
+        outln!(out, "#[cfg(feature = \"{}\")]", request_ns.header);
+    }
     outln!(
         out,
         "pub fn {}{}({}) -> Result<Self, ReplyOrIdError>",
-        function_name,
+        function_raw_name,
         generics_decl,
         function_args,
     );
@@ -339,7 +360,7 @@ fn generate_creator(
     outln!(
         out.indent(),
         "Ok(Self::{}_and_get_cookie(conn, {})?.0)",
-        function_name,
+        function_raw_name,
         forward_args_without_resource.join(", "),
     );
     outln!(out, "}}");

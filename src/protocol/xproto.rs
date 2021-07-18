@@ -27649,6 +27649,35 @@ impl<'c, C: X11Connection> PixmapWrapper<'c, C>
     {
         Ok(Self::create_pixmap_and_get_cookie(conn, depth, drawable, width, height)?.0)
     }
+
+    /// Create a new Pixmap and return a Pixmap wrapper and a cookie.
+    ///
+    /// This is a thin wrapper around [super::composite::name_window_pixmap] that allocates an id for the Pixmap.
+    /// This function returns the resulting `PixmapWrapper` that owns the created Pixmap and frees
+    /// it in `Drop`. This also returns a `VoidCookie` that comes from the call to
+    /// [super::composite::name_window_pixmap].
+    ///
+    /// Errors can come from the call to [X11Connection::generate_id] or [super::composite::name_window_pixmap].
+    #[cfg(feature = "composite")]
+    pub fn composite_name_window_pixmap_and_get_cookie(conn: &'c C, window: Window) -> Result<(Self, VoidCookie<'c, C>), ReplyOrIdError>
+    {
+        let pixmap = conn.generate_id()?;
+        let cookie = super::composite::name_window_pixmap(conn, window, pixmap)?;
+        Ok((Self::for_pixmap(conn, pixmap), cookie))
+    }
+
+    /// Create a new Pixmap and return a Pixmap wrapper
+    ///
+    /// This is a thin wrapper around [super::composite::name_window_pixmap] that allocates an id for the Pixmap.
+    /// This function returns the resulting `PixmapWrapper` that owns the created Pixmap and frees
+    /// it in `Drop`.
+    ///
+    /// Errors can come from the call to [X11Connection::generate_id] or [super::composite::name_window_pixmap].
+    #[cfg(feature = "composite")]
+    pub fn composite_name_window_pixmap(conn: &'c C, window: Window) -> Result<Self, ReplyOrIdError>
+    {
+        Ok(Self::composite_name_window_pixmap_and_get_cookie(conn, window)?.0)
+    }
 }
 
 impl<C: RequestConnection> From<&PixmapWrapper<'_, C>> for Pixmap {
