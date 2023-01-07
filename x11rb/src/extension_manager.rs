@@ -156,7 +156,7 @@ mod test {
     use crate::connection::{BufWithFds, ReplyOrError, RequestConnection, RequestKind};
     use crate::cookie::{Cookie, CookieWithFds, VoidCookie};
     use crate::errors::{ConnectionError, ParseError};
-    use crate::utils::RawFdContainer;
+    use crate::utils::OwnedFd;
     use crate::x11_utils::{ExtInfoProvider, ExtensionInformation, TryParse, TryParseFd};
     use x11rb_protocol::{DiscardMode, SequenceNumber};
 
@@ -170,7 +170,7 @@ mod test {
         fn send_request_with_reply<R>(
             &self,
             _bufs: &[IoSlice<'_>],
-            _fds: Vec<RawFdContainer>,
+            _fds: Vec<OwnedFd>,
         ) -> Result<Cookie<'_, Self, R>, ConnectionError>
         where
             R: TryParse,
@@ -181,7 +181,7 @@ mod test {
         fn send_request_with_reply_with_fds<R>(
             &self,
             _bufs: &[IoSlice<'_>],
-            _fds: Vec<RawFdContainer>,
+            _fds: Vec<OwnedFd>,
         ) -> Result<CookieWithFds<'_, Self, R>, ConnectionError>
         where
             R: TryParseFd,
@@ -192,7 +192,7 @@ mod test {
         fn send_request_without_reply(
             &self,
             _bufs: &[IoSlice<'_>],
-            _fds: Vec<RawFdContainer>,
+            _fds: Vec<OwnedFd>,
         ) -> Result<VoidCookie<'_, Self>, ConnectionError> {
             unimplemented!()
         }

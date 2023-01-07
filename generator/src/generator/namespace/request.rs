@@ -888,7 +888,7 @@ fn emit_request_struct(
             outln!(
                 out,
                 "pub fn try_parse_request_fd(header: RequestHeader, value: &{lifetime}[u8], \
-                 fds: &mut Vec<RawFdContainer>) -> Result<Self, ParseError> {{",
+                 fds: &mut Vec<OwnedFd>) -> Result<Self, ParseError> {{",
                 lifetime = parse_lifetime_block,
             );
         } else {
@@ -1458,12 +1458,12 @@ fn gather_request_fields(
                 let rust_field_name = to_rust_variable_name(&fd_field.name);
                 let generic_param = format!("{}", char::from(letter_iter.next().unwrap()));
                 let preamble_part = format!(
-                    "let {}: RawFdContainer = {}.into();",
+                    "let {}: OwnedFd = {}.into();",
                     rust_field_name, rust_field_name,
                 );
                 args.push((rust_field_name.clone(), Type::Simple(generic_param.clone())));
-                request_args.push((rust_field_name, Type::Simple("RawFdContainer".into())));
-                generics.push((generic_param, "Into<RawFdContainer>".into()));
+                request_args.push((rust_field_name, Type::Simple("OwnedFd".into())));
+                generics.push((generic_param, "Into<OwnedFd>".into()));
                 preamble.push(preamble_part);
                 single_fds.push(fd_field.name.clone());
             }
@@ -1471,9 +1471,9 @@ fn gather_request_fields(
                 let rust_field_name = to_rust_variable_name(&fd_list_field.name);
                 args.push((
                     rust_field_name.clone(),
-                    Type::Simple("Vec<RawFdContainer>".into()),
+                    Type::Simple("Vec<OwnedFd>".into()),
                 ));
-                request_args.push((rust_field_name, Type::Simple("Vec<RawFdContainer>".into())));
+                request_args.push((rust_field_name, Type::Simple("Vec<OwnedFd>".into())));
                 fd_lists.push(fd_list_field.name.clone());
             }
             xcbdefs::FieldDef::Expr(_) => unreachable!(),

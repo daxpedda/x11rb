@@ -4,7 +4,7 @@ use std::io::{Error, ErrorKind, Result};
 use std::{cmp, fmt, io};
 
 use super::Stream;
-use crate::utils::RawFdContainer;
+use crate::utils::OwnedFd;
 use x11rb_protocol::packet_reader::PacketReader as ProtoPacketReader;
 
 /// A wrapper around a reader that reads X11 packet.
@@ -42,7 +42,7 @@ impl PacketReader {
         &mut self,
         stream: &impl Stream,
         out_packets: &mut Vec<Vec<u8>>,
-        fd_storage: &mut Vec<RawFdContainer>,
+        fd_storage: &mut Vec<OwnedFd>,
     ) -> Result<()> {
         loop {
             // if the necessary packet size is larger than our buffer, just fill straight
@@ -105,7 +105,7 @@ impl PacketReader {
 mod tests {
     use super::PacketReader;
     use crate::rust_connection::{PollMode, Stream};
-    use crate::utils::RawFdContainer;
+    use crate::utils::OwnedFd;
     use std::cell::RefCell;
     use std::cmp;
     use std::io::{Error, ErrorKind, Result};
@@ -124,7 +124,7 @@ mod tests {
     }
 
     impl Stream for TestStream {
-        fn read(&self, buf: &mut [u8], _: &mut Vec<RawFdContainer>) -> Result<usize> {
+        fn read(&self, buf: &mut [u8], _: &mut Vec<OwnedFd>) -> Result<usize> {
             let mut data = self.data.borrow_mut();
             if data.len() == 0 {
                 return Err(Error::from(ErrorKind::WouldBlock));
@@ -140,7 +140,7 @@ mod tests {
             Ok(())
         }
 
-        fn write(&self, _: &[u8], _: &mut Vec<RawFdContainer>) -> Result<usize> {
+        fn write(&self, _: &[u8], _: &mut Vec<OwnedFd>) -> Result<usize> {
             unreachable!()
         }
     }

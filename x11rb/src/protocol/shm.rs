@@ -10,7 +10,7 @@ use std::borrow::Cow;
 #[allow(unused_imports)]
 use std::convert::TryInto;
 #[allow(unused_imports)]
-use crate::utils::RawFdContainer;
+use crate::utils::OwnedFd;
 #[allow(unused_imports)]
 use crate::x11_utils::{Request, RequestHeader, Serialize, TryParse, TryParseFd};
 use std::io::IoSlice;
@@ -137,9 +137,9 @@ where
 pub fn attach_fd<Conn, A>(conn: &Conn, shmseg: Seg, shm_fd: A, read_only: bool) -> Result<VoidCookie<'_, Conn>, ConnectionError>
 where
     Conn: RequestConnection + ?Sized,
-    A: Into<RawFdContainer>,
+    A: Into<OwnedFd>,
 {
-    let shm_fd: RawFdContainer = shm_fd.into();
+    let shm_fd: OwnedFd = shm_fd.into();
     let request0 = AttachFdRequest {
         shmseg,
         shm_fd,
@@ -192,7 +192,7 @@ pub trait ConnectionExt: RequestConnection {
     }
     fn shm_attach_fd<A>(&self, shmseg: Seg, shm_fd: A, read_only: bool) -> Result<VoidCookie<'_, Self>, ConnectionError>
     where
-        A: Into<RawFdContainer>,
+        A: Into<OwnedFd>,
     {
         attach_fd(self, shmseg, shm_fd, read_only)
     }
@@ -275,7 +275,7 @@ impl<'c, C: X11Connection> SegWrapper<'c, C>
     /// Errors can come from the call to [X11Connection::generate_id] or [attach_fd].
     pub fn attach_fd_and_get_cookie<A>(conn: &'c C, shm_fd: A, read_only: bool) -> Result<(Self, VoidCookie<'c, C>), ReplyOrIdError>
     where
-        A: Into<RawFdContainer>,
+        A: Into<OwnedFd>,
     {
         let shmseg = conn.generate_id()?;
         let cookie = attach_fd(conn, shmseg, shm_fd, read_only)?;
@@ -291,7 +291,7 @@ impl<'c, C: X11Connection> SegWrapper<'c, C>
     /// Errors can come from the call to [X11Connection::generate_id] or [attach_fd].
     pub fn attach_fd<A>(conn: &'c C, shm_fd: A, read_only: bool) -> Result<Self, ReplyOrIdError>
     where
-        A: Into<RawFdContainer>,
+        A: Into<OwnedFd>,
     {
         Ok(Self::attach_fd_and_get_cookie(conn, shm_fd, read_only)?.0)
     }

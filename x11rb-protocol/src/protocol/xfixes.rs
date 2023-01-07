@@ -19,7 +19,7 @@ use crate::errors::ParseError;
 use crate::x11_utils::TryIntoUSize;
 use crate::{BufWithFds, PiecewiseBuf};
 #[allow(unused_imports)]
-use crate::utils::{RawFdContainer, pretty_print_bitmask, pretty_print_enum};
+use crate::utils::{OwnedFd, pretty_print_bitmask, pretty_print_enum};
 #[allow(unused_imports)]
 use crate::x11_utils::{Request, RequestHeader, Serialize, TryParse, TryParseFd};
 #[allow(unused_imports)]

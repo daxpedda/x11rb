@@ -19,7 +19,7 @@ use crate::errors::ParseError;
 use crate::x11_utils::TryIntoUSize;
 use crate::{BufWithFds, PiecewiseBuf};
 #[allow(unused_imports)]
-use crate::utils::{RawFdContainer, pretty_print_bitmask, pretty_print_enum};
+use crate::utils::{OwnedFd, pretty_print_bitmask, pretty_print_enum};
 #[allow(unused_imports)]
 use crate::x11_utils::{Request, RequestHeader, Serialize, TryParse, TryParseFd};
 #[allow(unused_imports)]
@@ -6901,10 +6901,10 @@ pub struct CreateLeaseReply {
     pub nfd: u8,
     pub sequence: u16,
     pub length: u32,
-    pub master_fd: RawFdContainer,
+    pub master_fd: OwnedFd,
 }
 impl TryParseFd for CreateLeaseReply {
-    fn try_parse_fd<'a>(initial_value: &'a [u8], fds: &mut Vec<RawFdContainer>) -> Result<(Self, &'a [u8]), ParseError> {
+    fn try_parse_fd<'a>(initial_value: &'a [u8], fds: &mut Vec<OwnedFd>) -> Result<(Self, &'a [u8]), ParseError> {
         let remaining = initial_value;
         let (response_type, remaining) = u8::try_parse(remaining)?;
         let (nfd, remaining) = u8::try_parse(remaining)?;

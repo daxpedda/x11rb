@@ -3,7 +3,7 @@
 use alloc::collections::VecDeque;
 use alloc::vec::Vec;
 
-use crate::utils::RawFdContainer;
+use crate::utils::OwnedFd;
 use crate::{DiscardMode, SequenceNumber};
 
 /// A combination of a buffer and a list of file descriptors.
@@ -63,7 +63,7 @@ pub struct Connection {
     pending_replies: VecDeque<(SequenceNumber, BufWithFds)>,
 
     // FDs that were read, but not yet assigned to any reply
-    pending_fds: VecDeque<RawFdContainer>,
+    pending_fds: VecDeque<OwnedFd>,
 }
 
 impl Connection {
@@ -178,7 +178,7 @@ impl Connection {
     /// Add FDs that were received to the internal state.
     ///
     /// This must be called before the corresponding packets are enqueued.
-    pub fn enqueue_fds(&mut self, fds: Vec<RawFdContainer>) {
+    pub fn enqueue_fds(&mut self, fds: Vec<OwnedFd>) {
         self.pending_fds.extend(fds);
     }
 

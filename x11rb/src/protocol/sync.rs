@@ -10,7 +10,7 @@ use std::borrow::Cow;
 #[allow(unused_imports)]
 use std::convert::TryInto;
 #[allow(unused_imports)]
-use crate::utils::RawFdContainer;
+use crate::utils::OwnedFd;
 #[allow(unused_imports)]
 use crate::x11_utils::{Request, RequestHeader, Serialize, TryParse, TryParseFd};
 use std::io::IoSlice;
@@ -587,7 +587,7 @@ impl<'c, C: X11Connection> FenceWrapper<'c, C>
     #[cfg(feature = "dri3")]
     pub fn dri3_fence_from_fd_and_get_cookie<A>(conn: &'c C, drawable: xproto::Drawable, initially_triggered: bool, fence_fd: A) -> Result<(Self, VoidCookie<'c, C>), ReplyOrIdError>
     where
-        A: Into<RawFdContainer>,
+        A: Into<OwnedFd>,
     {
         let fence = conn.generate_id()?;
         let cookie = super::dri3::fence_from_fd(conn, drawable, fence, initially_triggered, fence_fd)?;
@@ -604,7 +604,7 @@ impl<'c, C: X11Connection> FenceWrapper<'c, C>
     #[cfg(feature = "dri3")]
     pub fn dri3_fence_from_fd<A>(conn: &'c C, drawable: xproto::Drawable, initially_triggered: bool, fence_fd: A) -> Result<Self, ReplyOrIdError>
     where
-        A: Into<RawFdContainer>,
+        A: Into<OwnedFd>,
     {
         Ok(Self::dri3_fence_from_fd_and_get_cookie(conn, drawable, initially_triggered, fence_fd)?.0)
     }

@@ -19,7 +19,7 @@ use crate::errors::ParseError;
 use crate::x11_utils::TryIntoUSize;
 use crate::{BufWithFds, PiecewiseBuf};
 #[allow(unused_imports)]
-use crate::utils::{RawFdContainer, pretty_print_bitmask, pretty_print_enum};
+use crate::utils::{OwnedFd, pretty_print_bitmask, pretty_print_enum};
 #[allow(unused_imports)]
 use crate::x11_utils::{Request, RequestHeader, Serialize, TryParse, TryParseFd};
 #[allow(unused_imports)]
@@ -861,7 +861,7 @@ pub const ATTACH_FD_REQUEST: u8 = 6;
 #[derive(Debug, PartialEq, Eq)]
 pub struct AttachFdRequest {
     pub shmseg: Seg,
-    pub shm_fd: RawFdContainer,
+    pub shm_fd: OwnedFd,
     pub read_only: bool,
 }
 impl AttachFdRequest {
@@ -891,7 +891,7 @@ impl AttachFdRequest {
         (vec![request0.into()], vec![self.shm_fd])
     }
     /// Parse this request given its header, its body, and any fds that go along with it
-    pub fn try_parse_request_fd(header: RequestHeader, value: &[u8], fds: &mut Vec<RawFdContainer>) -> Result<Self, ParseError> {
+    pub fn try_parse_request_fd(header: RequestHeader, value: &[u8], fds: &mut Vec<OwnedFd>) -> Result<Self, ParseError> {
         if header.minor_opcode != ATTACH_FD_REQUEST {
             return Err(ParseError::InvalidValue);
         }
@@ -997,10 +997,10 @@ pub struct CreateSegmentReply {
     pub nfd: u8,
     pub sequence: u16,
     pub length: u32,
-    pub shm_fd: RawFdContainer,
+    pub shm_fd: OwnedFd,
 }
 impl TryParseFd for CreateSegmentReply {
-    fn try_parse_fd<'a>(initial_value: &'a [u8], fds: &mut Vec<RawFdContainer>) -> Result<(Self, &'a [u8]), ParseError> {
+    fn try_parse_fd<'a>(initial_value: &'a [u8], fds: &mut Vec<OwnedFd>) -> Result<(Self, &'a [u8]), ParseError> {
         let remaining = initial_value;
         let (response_type, remaining) = u8::try_parse(remaining)?;
         let (nfd, remaining) = u8::try_parse(remaining)?;

@@ -13,7 +13,7 @@ mod test {
     use x11rb::protocol::xproto::{Screen, Setup};
     use x11rb::protocol::Event;
     use x11rb::resource_manager::{new_from_default, Database};
-    use x11rb::utils::RawFdContainer;
+    use x11rb::utils::OwnedFd;
     use x11rb::x11_utils::{ExtensionInformation, Serialize, TryParse, TryParseFd, X11Error};
     use x11rb_protocol::SequenceNumber;
 
@@ -144,7 +144,7 @@ mod test {
         fn send_request_with_reply<R>(
             &self,
             _: &[IoSlice<'_>],
-            _: Vec<RawFdContainer>,
+            _: Vec<OwnedFd>,
         ) -> Result<Cookie<'_, Self, R>, ConnectionError>
         where
             R: TryParse,
@@ -155,7 +155,7 @@ mod test {
         fn send_request_with_reply_with_fds<R>(
             &self,
             _: &[IoSlice<'_>],
-            _: Vec<RawFdContainer>,
+            _: Vec<OwnedFd>,
         ) -> Result<CookieWithFds<'_, Self, R>, ConnectionError>
         where
             R: TryParseFd,
@@ -166,7 +166,7 @@ mod test {
         fn send_request_without_reply(
             &self,
             _: &[IoSlice<'_>],
-            _: Vec<RawFdContainer>,
+            _: Vec<OwnedFd>,
         ) -> Result<VoidCookie<'_, Self>, ConnectionError> {
             unimplemented!()
         }

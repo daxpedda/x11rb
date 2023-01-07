@@ -9,7 +9,7 @@ use std::os::unix::net::UnixStream;
 #[cfg(windows)]
 use std::os::windows::io::{AsRawSocket, IntoRawSocket, RawSocket};
 
-use crate::utils::RawFdContainer;
+use crate::utils::OwnedFd;
 use x11rb_protocol::parse_display::ConnectAddress;
 use x11rb_protocol::xauth::Family;
 
@@ -87,7 +87,7 @@ pub trait Stream {
     /// interleaved across threads.
     /// * Neither the data nor the file descriptors shall be duplicated.
     /// * The returned value shall always be the actual number of bytes read into `buf`.
-    fn read(&self, buf: &mut [u8], fd_storage: &mut Vec<RawFdContainer>) -> Result<usize>;
+    fn read(&self, buf: &mut [u8], fd_storage: &mut Vec<OwnedFd>) -> Result<usize>;
 
     /// Read the exact number of bytes required to fill `buf` and also some amount of FDs.
     ///
@@ -106,7 +106,7 @@ pub trait Stream {
     ///
     /// Same as `read`. In any case, if this function returns without error, `buf.len()` bytes
     /// should have been read into `buf`.
-    fn read_exact(&self, mut buf: &mut [u8], fd_storage: &mut Vec<RawFdContainer>) -> Result<()> {
+    fn read_exact(&self, mut buf: &mut [u8], fd_storage: &mut Vec<OwnedFd>) -> Result<()> {
         while !buf.is_empty() {
             self.poll(PollMode::Readable)?;
             match self.read(buf, fd_storage) {
@@ -150,7 +150,7 @@ pub trait Stream {
     /// interleaved across threads.
     /// * Neither the data nor the file descriptors shall be duplicated.
     /// * The returned value shall always be the actual number of bytes written from `buf`.
-    fn write(&self, buf: &[u8], fds: &mut Vec<RawFdContainer>) -> Result<usize>;
+    fn write(&self, buf: &[u8], fds: &mut Vec<OwnedFd>) -> Result<usize>;
 
     /// Like `write`, except that it writes from a slice of buffers. Like `write`, this
     /// method must never block.
@@ -162,7 +162,7 @@ pub trait Stream {
     /// # Multithreading
     ///
     /// Same as `write`.
-    fn write_vectored(&self, bufs: &[IoSlice<'_>], fds: &mut Vec<RawFdContainer>) -> Result<usize> {
+    fn write_vectored(&self, bufs: &[IoSlice<'_>], fds: &mut Vec<OwnedFd>) -> Result<usize> {
         for buf in bufs {
             if !buf.is_empty() {
                 return self.write(buf, fds);
@@ -186,7 +186,7 @@ enum DefaultStreamInner {
     #[cfg(unix)]
     UnixStream(UnixStream),
     #[cfg(any(target_os = "linux", target_os = "android"))]
-    AbstractUnix(RawFdContainer),
+    AbstractUnix(OwnedFd),
 }
 
 impl DefaultStream {
@@ -349,7 +349,7 @@ impl IntoRawSocket for DefaultStream {
 fn do_write(
     stream: &DefaultStream,
     bufs: &[IoSlice<'_>],
-    fds: &mut Vec<RawFdContainer>,
+    fds: &mut Vec<OwnedFd>,
 ) -> Result<usize> {
     use nix::sys::socket::{sendmsg, ControlMessage, MsgFlags, SockaddrLike};
 
@@ -435,7 +435,7 @@ impl Stream for DefaultStream {
         }
     }
 
-    fn read(&self, buf: &mut [u8], fd_storage: &mut Vec<RawFdContainer>) -> Result<usize> {
+    fn read(&self, buf: &mut [u8], fd_storage: &mut Vec<OwnedFd>) -> Result<usize> {
         #[cfg(unix)]
         {
             use nix::sys::socket::{recvmsg, ControlMessageOwned};
@@ -462,7 +462,7 @@ impl Stream for DefaultStream {
                     ControlMessageOwned::ScmRights(r) => r,
                     _ => Vec::new(),
                 })
-                .map(RawFdContainer::new);
+                .map(OwnedFd::new);
 
             let mut cloexec_error = Ok(());
             fd_storage.extend(recvmsg::after_recvmsg(fds_received, &mut cloexec_error));
@@ -492,7 +492,7 @@ impl Stream for DefaultStream {
         }
     }
 
-    fn write(&self, buf: &[u8], fds: &mut Vec<RawFdContainer>) -> Result<usize> {
+    fn write(&self, buf: &[u8], fds: &mut Vec<OwnedFd>) -> Result<usize> {
         #[cfg(unix)]
         {
             do_write(self, &[IoSlice::new(buf)], fds)
@@ -520,7 +520,7 @@ impl Stream for DefaultStream {
         }
     }
 
-    fn write_vectored(&self, bufs: &[IoSlice<'_>], fds: &mut Vec<RawFdContainer>) -> Result<usize> {
+    fn write_vectored(&self, bufs: &[IoSlice<'_>], fds: &mut Vec<OwnedFd>) -> Result<usize> {
         #[cfg(unix)]
         {
             do_write(self, bufs, fds)
@@ -550,7 +550,7 @@ impl Stream for DefaultStream {
 }
 
 #[cfg(any(target_os = "linux", target_os = "android"))]
-fn connect_abstract_unix_stream(path: &[u8]) -> nix::Result<RawFdContainer> {
+fn connect_abstract_unix_stream(path: &[u8]) -> nix::Result<OwnedFd> {
     use nix::fcntl::{fcntl, FcntlArg, OFlag};
     use nix::sys::socket::{connect, socket, AddressFamily, SockFlag, SockType, UnixAddr};
 
@@ -561,9 +561,9 @@ fn connect_abstract_unix_stream(path: &[u8]) -> nix::Result<RawFdContainer> {
         None,
     )?;
 
-    // Wrap it in a RawFdContainer. Its Drop impl makes sure to close the socket if something
+    // Wrap it in a OwnedFd. Its Drop impl makes sure to close the socket if something
     // errors out below.
-    let socket = RawFdContainer::new(socket);
+    let socket = OwnedFd::new(socket);
 
     connect(socket.as_raw_fd(), &UnixAddr::new_abstract(path)?)?;
 
@@ -587,16 +587,16 @@ fn connect_abstract_unix_stream(path: &[u8]) -> nix::Result<RawFdContainer> {
     target_os = "openbsd"
 ))]
 mod recvmsg {
-    use super::RawFdContainer;
+    use super::OwnedFd;
 
     pub(crate) fn flags() -> nix::sys::socket::MsgFlags {
         nix::sys::socket::MsgFlags::MSG_CMSG_CLOEXEC
     }
 
     pub(crate) fn after_recvmsg<'a>(
-        fds: impl Iterator<Item = RawFdContainer> + 'a,
+        fds: impl Iterator<Item = OwnedFd> + 'a,
         _cloexec_error: &'a mut nix::Result<()>,
-    ) -> impl Iterator<Item = RawFdContainer> + 'a {
+    ) -> impl Iterator<Item = OwnedFd> + 'a {
         fds
     }
 }
@@ -614,7 +614,7 @@ mod recvmsg {
     ))
 ))]
 mod recvmsg {
-    use super::RawFdContainer;
+    use super::OwnedFd;
     use nix::fcntl::{fcntl, FcntlArg, FdFlag};
     use nix::sys::socket::MsgFlags;
     use std::os::unix::io::AsRawFd;
@@ -624,9 +624,9 @@ mod recvmsg {
     }
 
     pub(crate) fn after_recvmsg<'a>(
-        fds: impl Iterator<Item = RawFdContainer> + 'a,
+        fds: impl Iterator<Item = OwnedFd> + 'a,
         cloexec_error: &'a mut nix::Result<()>,
-    ) -> impl Iterator<Item = RawFdContainer> + 'a {
+    ) -> impl Iterator<Item = OwnedFd> + 'a {
         fds.map(move |fd| {
             if let Err(e) = fcntl(fd.as_raw_fd(), FcntlArg::F_SETFD(FdFlag::FD_CLOEXEC)) {
                 *cloexec_error = Err(e);

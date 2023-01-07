@@ -15,16 +15,16 @@ use alloc::borrow::Cow;
 use alloc::vec::Vec;
 use core::convert::TryInto;
 use crate::errors::ParseError;
-use crate::RawFdContainer;
+use crate::utils::OwnedFd;
 use crate::x11_utils::{TryParse, TryParseFd, X11Error, ReplyRequest, ReplyFDsRequest};
 use crate::x11_utils::{ExtInfoProvider, ReplyParsingFunction, RequestHeader};
 
-fn parse_reply<'a, R: ReplyRequest>(bytes: &'a [u8], _: &mut Vec<RawFdContainer>) -> Result<(Reply, &'a [u8]), ParseError> {
+fn parse_reply<'a, R: ReplyRequest>(bytes: &'a [u8], _: &mut Vec<OwnedFd>) -> Result<(Reply, &'a [u8]), ParseError> {
     let (reply, remaining) = R::Reply::try_parse(bytes)?;
     Ok((reply.into(), remaining))
 }
 #[allow(dead_code)]
-fn parse_reply_fds<'a, R: ReplyFDsRequest>(bytes: &'a [u8], fds: &mut Vec<RawFdContainer>) -> Result<(Reply, &'a [u8]), ParseError> {
+fn parse_reply_fds<'a, R: ReplyFDsRequest>(bytes: &'a [u8], fds: &mut Vec<OwnedFd>) -> Result<(Reply, &'a [u8]), ParseError> {
     let (reply, remaining) = R::Reply::try_parse_fd(bytes, fds)?;
     Ok((reply.into(), remaining))
 }
@@ -1307,7 +1307,7 @@ impl<'input> Request<'input> {
         body: &'input [u8],
         // Might not be used if none of the extensions that use FD passing is enabled
         #[allow(unused_variables, clippy::ptr_arg)]
-        fds: &mut Vec<RawFdContainer>,
+        fds: &mut Vec<OwnedFd>,
         ext_info_provider: &dyn ExtInfoProvider,
     ) -> Result<Self, ParseError> {
         let remaining = body;

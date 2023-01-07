@@ -1287,8 +1287,8 @@ impl<'ns, 'c> NamespaceGenerator<'ns, 'c> {
             xcbdefs::FieldDef::Switch(switch_field) => {
                 format!("{}{}", switch_prefix, to_rust_type_name(&switch_field.name))
             }
-            xcbdefs::FieldDef::Fd(_) => "RawFdContainer".into(),
-            xcbdefs::FieldDef::FdList(_) => "Vec<RawFdContainer>".into(),
+            xcbdefs::FieldDef::Fd(_) => "OwnedFd".into(),
+            xcbdefs::FieldDef::FdList(_) => "Vec<OwnedFd>".into(),
             xcbdefs::FieldDef::Expr(_) => unreachable!(),
             xcbdefs::FieldDef::VirtualLen(_) => unreachable!(),
         }
@@ -1474,7 +1474,7 @@ impl<'ns, 'c> NamespaceGenerator<'ns, 'c> {
                     }
                 }
                 xcbdefs::FieldDef::Fd(_) | xcbdefs::FieldDef::FdList(_) => {
-                    // RawFdContainer cannot be cloned, compared, hashed or made default
+                    // OwnedFd cannot be cloned, compared, hashed or made default
                     derives.clone = false;
                     derives.copy = false;
                     derives.partial_ord = false;

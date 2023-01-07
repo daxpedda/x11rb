@@ -13,14 +13,14 @@ use crate::cookie::{Cookie, CookieWithFds, VoidCookie};
 use crate::errors::{ConnectionError, ParseError, ReplyError, ReplyOrIdError};
 use crate::protocol::xproto::Setup;
 use crate::protocol::Event;
-use crate::utils::RawFdContainer;
+use crate::utils::OwnedFd;
 use crate::x11_utils::{ExtensionInformation, TryParse, TryParseFd, X11Error};
 
 pub use x11rb_protocol::{DiscardMode, RawEventAndSeqNumber, SequenceNumber};
 
 // Used to avoid too-complex types.
 /// A combination of a buffer and a list of file descriptors.
-pub type BufWithFds<B> = (B, Vec<RawFdContainer>);
+pub type BufWithFds<B> = (B, Vec<OwnedFd>);
 /// An event and its sequence number.
 pub type EventAndSeqNumber = (Event, SequenceNumber);
 /// A buffer that is logically continuous, but presented in a number of pieces.
@@ -72,7 +72,7 @@ pub trait RequestConnection {
     fn send_request_with_reply<R>(
         &self,
         bufs: &[IoSlice<'_>],
-        fds: Vec<RawFdContainer>,
+        fds: Vec<OwnedFd>,
     ) -> Result<Cookie<'_, Self, R>, ConnectionError>
     where
         R: TryParse;
@@ -122,7 +122,7 @@ pub trait RequestConnection {
     fn send_request_with_reply_with_fds<R>(
         &self,
         bufs: &[IoSlice<'_>],
-        fds: Vec<RawFdContainer>,
+        fds: Vec<OwnedFd>,
     ) -> Result<CookieWithFds<'_, Self, R>, ConnectionError>
     where
         R: TryParseFd;
@@ -172,7 +172,7 @@ pub trait RequestConnection {
     fn send_request_without_reply(
         &self,
         bufs: &[IoSlice<'_>],
-        fds: Vec<RawFdContainer>,
+        fds: Vec<OwnedFd>,
     ) -> Result<VoidCookie<'_, Self>, ConnectionError>;
 
     /// Send a request without a reply to the server.
@@ -455,7 +455,7 @@ pub enum RequestKind {
 /// use x11rb::connection::{BufWithFds, RequestConnection, compute_length_field};
 /// use x11rb::cookie::{Cookie, CookieWithFds, VoidCookie};
 /// use x11rb::errors::{ParseError, ConnectionError};
-/// use x11rb::utils::RawFdContainer;
+/// use x11rb::utils::OwnedFd;
 /// use x11rb::x11_utils::{ExtensionInformation, TryParse, TryParseFd};
 /// use x11rb_protocol::SequenceNumber;
 /// # use x11rb::connection::ReplyOrError;
@@ -510,26 +510,26 @@ pub enum RequestKind {
 ///     #     unimplemented!()
 ///     # }
 ///
-///     fn send_request_with_reply<R>(&self, bufs: &[IoSlice], fds: Vec<RawFdContainer>)
+///     fn send_request_with_reply<R>(&self, bufs: &[IoSlice], fds: Vec<OwnedFd>)
 ///     -> Result<Cookie<Self, R>, ConnectionError>
 ///     where R: TryParse {
 ///         Ok(Cookie::new(self, self.send_request(bufs, fds, true, false)?))
 ///     }
 ///
-///     fn send_request_with_reply_with_fds<R>(&self, bufs: &[IoSlice], fds: Vec<RawFdContainer>)
+///     fn send_request_with_reply_with_fds<R>(&self, bufs: &[IoSlice], fds: Vec<OwnedFd>)
 ///     -> Result<CookieWithFds<Self, R>, ConnectionError>
 ///     where R: TryParseFd {
 ///         Ok(CookieWithFds::new(self, self.send_request(bufs, fds, true, true)?))
 ///     }
 ///
-///     fn send_request_without_reply(&self, bufs: &[IoSlice], fds: Vec<RawFdContainer>)
+///     fn send_request_without_reply(&self, bufs: &[IoSlice], fds: Vec<OwnedFd>)
 ///     -> Result<VoidCookie<Self>, ConnectionError> {
 ///         Ok(VoidCookie::new(self, self.send_request(bufs, fds, false, false)?))
 ///     }
 /// }
 ///
 /// impl MyConnection {
-///     fn send_request(&self, bufs: &[IoSlice], fds: Vec<RawFdContainer>,
+///     fn send_request(&self, bufs: &[IoSlice], fds: Vec<OwnedFd>,
 ///                     has_reply: bool, reply_has_fds: bool)
 ///     -> Result<SequenceNumber, ConnectionError>
 ///     {

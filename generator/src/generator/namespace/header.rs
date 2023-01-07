@@ -61,9 +61,9 @@ pub(super) fn write_header(out: &mut Output, ns: &xcbdefs::Namespace, mode: Mode
     match mode {
         Mode::Protocol => outln!(
             out,
-            "use crate::utils::{{RawFdContainer, pretty_print_bitmask, pretty_print_enum}};"
+            "use crate::utils::{{OwnedFd, pretty_print_bitmask, pretty_print_enum}};"
         ),
-        Mode::X11rb => outln!(out, "use crate::utils::RawFdContainer;"),
+        Mode::X11rb => outln!(out, "use crate::utils::OwnedFd;"),
     }
     outln!(out, "#[allow(unused_imports)]");
     outln!(

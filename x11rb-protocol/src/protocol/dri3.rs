@@ -19,7 +19,7 @@ use crate::errors::ParseError;
 use crate::x11_utils::TryIntoUSize;
 use crate::{BufWithFds, PiecewiseBuf};
 #[allow(unused_imports)]
-use crate::utils::{RawFdContainer, pretty_print_bitmask, pretty_print_enum};
+use crate::utils::{OwnedFd, pretty_print_bitmask, pretty_print_enum};
 #[allow(unused_imports)]
 use crate::x11_utils::{Request, RequestHeader, Serialize, TryParse, TryParseFd};
 #[allow(unused_imports)]
@@ -231,10 +231,10 @@ pub struct OpenReply {
     pub nfd: u8,
     pub sequence: u16,
     pub length: u32,
-    pub device_fd: RawFdContainer,
+    pub device_fd: OwnedFd,
 }
 impl TryParseFd for OpenReply {
-    fn try_parse_fd<'a>(initial_value: &'a [u8], fds: &mut Vec<RawFdContainer>) -> Result<(Self, &'a [u8]), ParseError> {
+    fn try_parse_fd<'a>(initial_value: &'a [u8], fds: &mut Vec<OwnedFd>) -> Result<(Self, &'a [u8]), ParseError> {
         let remaining = initial_value;
         let (response_type, remaining) = u8::try_parse(remaining)?;
         let (nfd, remaining) = u8::try_parse(remaining)?;
@@ -318,7 +318,7 @@ pub struct PixmapFromBufferRequest {
     pub stride: u16,
     pub depth: u8,
     pub bpp: u8,
-    pub pixmap_fd: RawFdContainer,
+    pub pixmap_fd: OwnedFd,
 }
 impl PixmapFromBufferRequest {
     /// Serialize this request into bytes for the provided connection
@@ -365,7 +365,7 @@ impl PixmapFromBufferRequest {
         (vec![request0.into()], vec![self.pixmap_fd])
     }
     /// Parse this request given its header, its body, and any fds that go along with it
-    pub fn try_parse_request_fd(header: RequestHeader, value: &[u8], fds: &mut Vec<RawFdContainer>) -> Result<Self, ParseError> {
+    pub fn try_parse_request_fd(header: RequestHeader, value: &[u8], fds: &mut Vec<OwnedFd>) -> Result<Self, ParseError> {
         if header.minor_opcode != PIXMAP_FROM_BUFFER_REQUEST {
             return Err(ParseError::InvalidValue);
         }
@@ -471,10 +471,10 @@ pub struct BufferFromPixmapReply {
     pub stride: u16,
     pub depth: u8,
     pub bpp: u8,
-    pub pixmap_fd: RawFdContainer,
+    pub pixmap_fd: OwnedFd,
 }
 impl TryParseFd for BufferFromPixmapReply {
-    fn try_parse_fd<'a>(initial_value: &'a [u8], fds: &mut Vec<RawFdContainer>) -> Result<(Self, &'a [u8]), ParseError> {
+    fn try_parse_fd<'a>(initial_value: &'a [u8], fds: &mut Vec<OwnedFd>) -> Result<(Self, &'a [u8]), ParseError> {
         let remaining = initial_value;
         let (response_type, remaining) = u8::try_parse(remaining)?;
         let (nfd, remaining) = u8::try_parse(remaining)?;
@@ -571,7 +571,7 @@ pub struct FenceFromFDRequest {
     pub drawable: xproto::Drawable,
     pub fence: u32,
     pub initially_triggered: bool,
-    pub fence_fd: RawFdContainer,
+    pub fence_fd: OwnedFd,
 }
 impl FenceFromFDRequest {
     /// Serialize this request into bytes for the provided connection
@@ -605,7 +605,7 @@ impl FenceFromFDRequest {
         (vec![request0.into()], vec![self.fence_fd])
     }
     /// Parse this request given its header, its body, and any fds that go along with it
-    pub fn try_parse_request_fd(header: RequestHeader, value: &[u8], fds: &mut Vec<RawFdContainer>) -> Result<Self, ParseError> {
+    pub fn try_parse_request_fd(header: RequestHeader, value: &[u8], fds: &mut Vec<OwnedFd>) -> Result<Self, ParseError> {
         if header.minor_opcode != FENCE_FROM_FD_REQUEST {
             return Err(ParseError::InvalidValue);
         }
@@ -704,10 +704,10 @@ pub struct FDFromFenceReply {
     pub nfd: u8,
     pub sequence: u16,
     pub length: u32,
-    pub fence_fd: RawFdContainer,
+    pub fence_fd: OwnedFd,
 }
 impl TryParseFd for FDFromFenceReply {
-    fn try_parse_fd<'a>(initial_value: &'a [u8], fds: &mut Vec<RawFdContainer>) -> Result<(Self, &'a [u8]), ParseError> {
+    fn try_parse_fd<'a>(initial_value: &'a [u8], fds: &mut Vec<OwnedFd>) -> Result<(Self, &'a [u8]), ParseError> {
         let remaining = initial_value;
         let (response_type, remaining) = u8::try_parse(remaining)?;
         let (nfd, remaining) = u8::try_parse(remaining)?;
@@ -947,7 +947,7 @@ pub struct PixmapFromBuffersRequest {
     pub depth: u8,
     pub bpp: u8,
     pub modifier: u64,
-    pub buffers: Vec<RawFdContainer>,
+    pub buffers: Vec<OwnedFd>,
 }
 impl PixmapFromBuffersRequest {
     /// Serialize this request into bytes for the provided connection
@@ -1043,7 +1043,7 @@ impl PixmapFromBuffersRequest {
         (vec![request0.into()], self.buffers)
     }
     /// Parse this request given its header, its body, and any fds that go along with it
-    pub fn try_parse_request_fd(header: RequestHeader, value: &[u8], fds: &mut Vec<RawFdContainer>) -> Result<Self, ParseError> {
+    pub fn try_parse_request_fd(header: RequestHeader, value: &[u8], fds: &mut Vec<OwnedFd>) -> Result<Self, ParseError> {
         if header.minor_opcode != PIXMAP_FROM_BUFFERS_REQUEST {
             return Err(ParseError::InvalidValue);
         }
@@ -1168,10 +1168,10 @@ pub struct BuffersFromPixmapReply {
     pub bpp: u8,
     pub strides: Vec<u32>,
     pub offsets: Vec<u32>,
-    pub buffers: Vec<RawFdContainer>,
+    pub buffers: Vec<OwnedFd>,
 }
 impl TryParseFd for BuffersFromPixmapReply {
-    fn try_parse_fd<'a>(initial_value: &'a [u8], fds: &mut Vec<RawFdContainer>) -> Result<(Self, &'a [u8]), ParseError> {
+    fn try_parse_fd<'a>(initial_value: &'a [u8], fds: &mut Vec<OwnedFd>) -> Result<(Self, &'a [u8]), ParseError> {
         let remaining = initial_value;
         let (response_type, remaining) = u8::try_parse(remaining)?;
         let (nfd, remaining) = u8::try_parse(remaining)?;

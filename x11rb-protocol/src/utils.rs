@@ -1,16 +1,16 @@
 //! Utility functions that are not specific to X11.
 //!
-//! # RawFdContainer
+//! # OwnedFd
 //!
-//! [`RawFdContainer`] is a variant of [`std::os::unix::io::RawFd`] with ownership semantics. This
-//! means that the `RawFd` will be closed when the `RawFdContainer` is dropped.
+//! [`OwnedFd`] is a variant of [`std::os::unix::io::RawFd`] with ownership semantics. This
+//! means that the `RawFd` will be closed when the `OwnedFd` is dropped.
 //!
 //! On non-`cfg(unix)`-systems, this is an empty type without methods. It still exists as a type so
 //! that it can appear in interfaces, but it is not actually possible to construct an instance of
-//! `RawFdContainer`.
+//! `OwnedFd`.
 
 #[cfg(all(feature = "std", unix))]
-mod raw_fd_container {
+mod owned_fd {
     use std::mem::forget;
     use std::os::unix::io::{AsRawFd, IntoRawFd, RawFd};
 
@@ -19,31 +19,31 @@ mod raw_fd_container {
     /// On non-unix systems, this type is empty and does not provide
     /// any method.
     #[derive(Debug, Hash, PartialEq, Eq)]
-    pub struct RawFdContainer(RawFd);
+    pub struct OwnedFd(RawFd);
 
-    impl Drop for RawFdContainer {
+    impl Drop for OwnedFd {
         fn drop(&mut self) {
             let _ = nix::unistd::close(self.0);
         }
     }
 
-    impl RawFdContainer {
-        /// Create a new `RawFdContainer` for the given `RawFd`.
+    impl OwnedFd {
+        /// Create a new `OwnedFd` for the given `RawFd`.
         ///
-        /// The `RawFdContainer` takes ownership of the `RawFd` and closes it on drop.
+        /// The `OwnedFd` takes ownership of the `RawFd` and closes it on drop.
         pub fn new(fd: RawFd) -> Self {
-            RawFdContainer(fd)
+            OwnedFd(fd)
         }
 
-        /// Tries to clone the `RawFdContainer` creating a new FD
-        /// with `dup`. The new `RawFdContainer` will take ownership
-        /// of the `dup`ed version, whereas the original `RawFdContainer`
+        /// Tries to clone the `OwnedFd` creating a new FD
+        /// with `dup`. The new `OwnedFd` will take ownership
+        /// of the `dup`ed version, whereas the original `OwnedFd`
         /// will keep the ownership of its FD.
         pub fn try_clone(&self) -> Result<Self, std::io::Error> {
             Ok(Self::new(nix::unistd::dup(self.0)?))
         }
 
-        /// Get the `RawFd` out of this `RawFdContainer`.
+        /// Get the `RawFd` out of this `OwnedFd`.
         ///
         /// This function would be an implementation of `IntoRawFd` if that were possible. However, it
         /// causes a conflict with an `impl` from libcore...
@@ -53,10 +53,10 @@ mod raw_fd_container {
             fd
         }
 
-        /// Consumes the `RawFdContainer` and closes the wrapped FD with
+        /// Consumes the `OwnedFd` and closes the wrapped FD with
         /// the `close` system call.
         ///
-        /// This is similar to dropping the `RawFdContainer`, but it allows
+        /// This is similar to dropping the `OwnedFd`, but it allows
         /// the caller to handle errors.
         pub fn close(self) -> Result<(), std::io::Error> {
             let fd = self.into_raw_fd();
@@ -64,13 +64,13 @@ mod raw_fd_container {
         }
     }
 
-    impl<T: IntoRawFd> From<T> for RawFdContainer {
+    impl<T: IntoRawFd> From<T> for OwnedFd {
         fn from(fd: T) -> Self {
             Self::new(fd.into_raw_fd())
         }
     }
 
-    impl AsRawFd for RawFdContainer {
+    impl AsRawFd for OwnedFd {
         fn as_raw_fd(&self) -> RawFd {
             self.0
         }
@@ -78,7 +78,7 @@ mod raw_fd_container {
 }
 
 #[cfg(not(all(feature = "std", unix)))]
-mod raw_fd_container {
+mod owned_fd {
     use core::convert::Infallible;
 
     /// A simple wrapper around RawFd that closes the fd on drop.
@@ -86,9 +86,9 @@ mod raw_fd_container {
     /// On non-unix systems, this type is empty and does not provide
     /// any method.
     #[derive(Debug, Hash, PartialEq, Eq)]
-    pub struct RawFdContainer(Infallible);
+    pub struct OwnedFd(Infallible);
 
-    impl Drop for RawFdContainer {
+    impl Drop for OwnedFd {
         fn drop(&mut self) {
             // This function exists for symmetry with cfg(unix)
             match self.0 {}
@@ -96,7 +96,7 @@ mod raw_fd_container {
     }
 }
 
-pub use raw_fd_container::RawFdContainer;
+pub use owned_fd::OwnedFd;
 
 mod pretty_printer {
     use core::fmt::{Debug, Formatter, Result};

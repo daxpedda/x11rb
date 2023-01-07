@@ -58,7 +58,7 @@ mod fake_stream {
         ImageOrder, Setup, CLIENT_MESSAGE_EVENT, GET_INPUT_FOCUS_REQUEST, SEND_EVENT_REQUEST,
     };
     use x11rb::rust_connection::{PollMode, RustConnection, Stream};
-    use x11rb::utils::RawFdContainer;
+    use x11rb::utils::OwnedFd;
 
     use x11rb_protocol::SequenceNumber;
 
@@ -185,7 +185,7 @@ mod fake_stream {
         fn read(
             &self,
             buf: &mut [u8],
-            _fd_storage: &mut Vec<RawFdContainer>,
+            _fd_storage: &mut Vec<OwnedFd>,
         ) -> std::io::Result<usize> {
             let mut inner = self.inner.lock().unwrap();
             if inner.read.pending.is_empty() {
@@ -205,7 +205,7 @@ mod fake_stream {
             Ok(len)
         }
 
-        fn write(&self, buf: &[u8], fds: &mut Vec<RawFdContainer>) -> std::io::Result<usize> {
+        fn write(&self, buf: &[u8], fds: &mut Vec<OwnedFd>) -> std::io::Result<usize> {
             assert!(fds.is_empty());
 
             let mut inner = self.inner.lock().unwrap();

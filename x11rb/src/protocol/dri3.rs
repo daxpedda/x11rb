@@ -10,7 +10,7 @@ use std::borrow::Cow;
 #[allow(unused_imports)]
 use std::convert::TryInto;
 #[allow(unused_imports)]
-use crate::utils::RawFdContainer;
+use crate::utils::OwnedFd;
 #[allow(unused_imports)]
 use crate::x11_utils::{Request, RequestHeader, Serialize, TryParse, TryParseFd};
 use std::io::IoSlice;
@@ -63,9 +63,9 @@ where
 pub fn pixmap_from_buffer<Conn, A>(conn: &Conn, pixmap: xproto::Pixmap, drawable: xproto::Drawable, size: u32, width: u16, height: u16, stride: u16, depth: u8, bpp: u8, pixmap_fd: A) -> Result<VoidCookie<'_, Conn>, ConnectionError>
 where
     Conn: RequestConnection + ?Sized,
-    A: Into<RawFdContainer>,
+    A: Into<OwnedFd>,
 {
-    let pixmap_fd: RawFdContainer = pixmap_fd.into();
+    let pixmap_fd: OwnedFd = pixmap_fd.into();
     let request0 = PixmapFromBufferRequest {
         pixmap,
         drawable,
@@ -97,9 +97,9 @@ where
 pub fn fence_from_fd<Conn, A>(conn: &Conn, drawable: xproto::Drawable, fence: u32, initially_triggered: bool, fence_fd: A) -> Result<VoidCookie<'_, Conn>, ConnectionError>
 where
     Conn: RequestConnection + ?Sized,
-    A: Into<RawFdContainer>,
+    A: Into<OwnedFd>,
 {
-    let fence_fd: RawFdContainer = fence_fd.into();
+    let fence_fd: OwnedFd = fence_fd.into();
     let request0 = FenceFromFDRequest {
         drawable,
         fence,
@@ -138,7 +138,7 @@ where
     conn.send_request_with_reply(&slices, fds)
 }
 
-pub fn pixmap_from_buffers<Conn>(conn: &Conn, pixmap: xproto::Pixmap, window: xproto::Window, width: u16, height: u16, stride0: u32, offset0: u32, stride1: u32, offset1: u32, stride2: u32, offset2: u32, stride3: u32, offset3: u32, depth: u8, bpp: u8, modifier: u64, buffers: Vec<RawFdContainer>) -> Result<VoidCookie<'_, Conn>, ConnectionError>
+pub fn pixmap_from_buffers<Conn>(conn: &Conn, pixmap: xproto::Pixmap, window: xproto::Window, width: u16, height: u16, stride0: u32, offset0: u32, stride1: u32, offset1: u32, stride2: u32, offset2: u32, stride3: u32, offset3: u32, depth: u8, bpp: u8, modifier: u64, buffers: Vec<OwnedFd>) -> Result<VoidCookie<'_, Conn>, ConnectionError>
 where
     Conn: RequestConnection + ?Sized,
 {
@@ -203,7 +203,7 @@ pub trait ConnectionExt: RequestConnection {
     }
     fn dri3_pixmap_from_buffer<A>(&self, pixmap: xproto::Pixmap, drawable: xproto::Drawable, size: u32, width: u16, height: u16, stride: u16, depth: u8, bpp: u8, pixmap_fd: A) -> Result<VoidCookie<'_, Self>, ConnectionError>
     where
-        A: Into<RawFdContainer>,
+        A: Into<OwnedFd>,
     {
         pixmap_from_buffer(self, pixmap, drawable, size, width, height, stride, depth, bpp, pixmap_fd)
     }
@@ -213,7 +213,7 @@ pub trait ConnectionExt: RequestConnection {
     }
     fn dri3_fence_from_fd<A>(&self, drawable: xproto::Drawable, fence: u32, initially_triggered: bool, fence_fd: A) -> Result<VoidCookie<'_, Self>, ConnectionError>
     where
-        A: Into<RawFdContainer>,
+        A: Into<OwnedFd>,
     {
         fence_from_fd(self, drawable, fence, initially_triggered, fence_fd)
     }
@@ -225,7 +225,7 @@ pub trait ConnectionExt: RequestConnection {
     {
         get_supported_modifiers(self, window, depth, bpp)
     }
-    fn dri3_pixmap_from_buffers(&self, pixmap: xproto::Pixmap, window: xproto::Window, width: u16, height: u16, stride0: u32, offset0: u32, stride1: u32, offset1: u32, stride2: u32, offset2: u32, stride3: u32, offset3: u32, depth: u8, bpp: u8, modifier: u64, buffers: Vec<RawFdContainer>) -> Result<VoidCookie<'_, Self>, ConnectionError>
+    fn dri3_pixmap_from_buffers(&self, pixmap: xproto::Pixmap, window: xproto::Window, width: u16, height: u16, stride0: u32, offset0: u32, stride1: u32, offset1: u32, stride2: u32, offset2: u32, stride3: u32, offset3: u32, depth: u8, bpp: u8, modifier: u64, buffers: Vec<OwnedFd>) -> Result<VoidCookie<'_, Self>, ConnectionError>
     {
         pixmap_from_buffers(self, pixmap, window, width, height, stride0, offset0, stride1, offset1, stride2, offset2, stride3, offset3, depth, bpp, modifier, buffers)
     }

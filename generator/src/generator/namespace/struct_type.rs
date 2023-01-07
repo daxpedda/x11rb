@@ -86,7 +86,7 @@ pub(super) fn emit_struct_type(
             outln!(out, "impl TryParseFd for {} {{", name);
             outln!(
                 out.indent(),
-                "fn try_parse_fd<'a>({}: &'a [u8], fds: &mut Vec<RawFdContainer>) -> \
+                "fn try_parse_fd<'a>({}: &'a [u8], fds: &mut Vec<OwnedFd>) -> \
                  Result<(Self, &'a [u8]), ParseError> {{",
                 input_name,
             );

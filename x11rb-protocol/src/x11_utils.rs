@@ -11,7 +11,7 @@ use alloc::vec::Vec;
 
 use crate::errors::ParseError;
 use crate::protocol::{request_name, ErrorKind};
-use crate::utils::RawFdContainer;
+use crate::utils::OwnedFd;
 use crate::BufWithFds;
 
 /// Representation of an X11 error packet that was sent by the server.
@@ -235,14 +235,14 @@ pub trait TryParseFd: Sized {
     /// be returned. Otherwise, an error is returned.
     fn try_parse_fd<'a>(
         value: &'a [u8],
-        fds: &mut Vec<RawFdContainer>,
+        fds: &mut Vec<OwnedFd>,
     ) -> Result<(Self, &'a [u8]), ParseError>;
 }
 
 impl<T: TryParse> TryParseFd for T {
     fn try_parse_fd<'a>(
         value: &'a [u8],
-        _: &mut Vec<RawFdContainer>,
+        _: &mut Vec<OwnedFd>,
     ) -> Result<(Self, &'a [u8]), ParseError> {
         T::try_parse(value)
     }
@@ -279,7 +279,7 @@ pub trait Request {
 pub type ReplyParsingFunction =
     for<'a> fn(
         &'a [u8],
-        &mut Vec<RawFdContainer>,
+        &mut Vec<OwnedFd>,
     ) -> Result<(crate::protocol::Reply, &'a [u8]), ParseError>;
 
 /// A X11 request that does not have a reply

@@ -13,7 +13,7 @@ pub use crate::errors::{ConnectError, ConnectionError, ParseError, ReplyError, R
 use crate::extension_manager::ExtensionManager;
 use crate::protocol::bigreq::{ConnectionExt as _, EnableReply};
 use crate::protocol::xproto::{Setup, GET_INPUT_FOCUS_REQUEST};
-use crate::utils::RawFdContainer;
+use crate::utils::OwnedFd;
 use crate::x11_utils::{ExtensionInformation, TryParse, TryParseFd};
 use x11rb_protocol::connect::Connect;
 use x11rb_protocol::connection::{Connection as ProtoConnection, PollReply, ReplyFdKind};
@@ -269,7 +269,7 @@ impl<S: Stream> RustConnection<S> {
     fn send_request(
         &self,
         bufs: &[IoSlice<'_>],
-        fds: Vec<RawFdContainer>,
+        fds: Vec<OwnedFd>,
         kind: ReplyFdKind,
     ) -> Result<SequenceNumber, ConnectionError> {
         let mut storage = Default::default();
@@ -331,7 +331,7 @@ impl<S: Stream> RustConnection<S> {
         &'a self,
         mut inner: MutexGuardInner<'a>,
         mut bufs: &[IoSlice<'_>],
-        mut fds: Vec<RawFdContainer>,
+        mut fds: Vec<OwnedFd>,
     ) -> std::io::Result<MutexGuardInner<'a>> {
         let mut partial_buf: &[u8] = &[];
         while !partial_buf.is_empty() || !bufs.is_empty() || !fds.is_empty() {
@@ -518,7 +518,7 @@ impl<S: Stream> RequestConnection for RustConnection<S> {
     fn send_request_with_reply<Reply>(
         &self,
         bufs: &[IoSlice<'_>],
-        fds: Vec<RawFdContainer>,
+        fds: Vec<OwnedFd>,
     ) -> Result<Cookie<'_, Self, Reply>, ConnectionError>
     where
         Reply: TryParse,
@@ -532,7 +532,7 @@ impl<S: Stream> RequestConnection for RustConnection<S> {
     fn send_request_with_reply_with_fds<Reply>(
         &self,
         bufs: &[IoSlice<'_>],
-        fds: Vec<RawFdContainer>,
+        fds: Vec<OwnedFd>,
     ) -> Result<CookieWithFds<'_, Self, Reply>, ConnectionError>
     where
         Reply: TryParseFd,
@@ -546,7 +546,7 @@ impl<S: Stream> RequestConnection for RustConnection<S> {
     fn send_request_without_reply(
         &self,
         bufs: &[IoSlice<'_>],
-        fds: Vec<RawFdContainer>,
+        fds: Vec<OwnedFd>,
     ) -> Result<VoidCookie<'_, Self>, ConnectionError> {
         Ok(VoidCookie::new(
             self,

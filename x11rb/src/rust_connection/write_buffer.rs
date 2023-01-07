@@ -2,12 +2,12 @@ use std::collections::VecDeque;
 use std::io::IoSlice;
 
 use super::Stream;
-use crate::utils::RawFdContainer;
+use crate::utils::OwnedFd;
 
 #[derive(Debug)]
 pub(super) struct WriteBuffer {
     data_buf: VecDeque<u8>,
-    fd_buf: Vec<RawFdContainer>,
+    fd_buf: Vec<OwnedFd>,
 }
 
 impl WriteBuffer {
@@ -54,7 +54,7 @@ impl WriteBuffer {
     fn write_helper<W: Stream, F, G>(
         &mut self,
         stream: &W,
-        fds: &mut Vec<RawFdContainer>,
+        fds: &mut Vec<OwnedFd>,
         write_buffer: F,
         write_inner: G,
         first_buffer: &[u8],
@@ -62,7 +62,7 @@ impl WriteBuffer {
     ) -> std::io::Result<usize>
     where
         F: FnOnce(&mut VecDeque<u8>),
-        G: FnOnce(&W, &mut Vec<RawFdContainer>) -> std::io::Result<usize>,
+        G: FnOnce(&W, &mut Vec<OwnedFd>) -> std::io::Result<usize>,
     {
         self.fd_buf.append(fds);
 
@@ -110,7 +110,7 @@ impl WriteBuffer {
         &mut self,
         stream: &impl Stream,
         buf: &[u8],
-        fds: &mut Vec<RawFdContainer>,
+        fds: &mut Vec<OwnedFd>,
     ) -> std::io::Result<usize> {
         self.write_helper(
             stream,
@@ -126,7 +126,7 @@ impl WriteBuffer {
         &mut self,
         stream: &impl Stream,
         bufs: &[IoSlice<'_>],
-        fds: &mut Vec<RawFdContainer>,
+        fds: &mut Vec<OwnedFd>,
     ) -> std::io::Result<usize> {
         let first_nonempty = bufs
             .iter()
@@ -163,7 +163,7 @@ mod test {
 
     use super::super::{PollMode, Stream};
     use super::WriteBuffer;
-    use crate::utils::RawFdContainer;
+    use crate::utils::OwnedFd;
 
     struct WouldBlockWriter;
 
@@ -172,11 +172,11 @@ mod test {
             unimplemented!();
         }
 
-        fn read(&self, _buf: &mut [u8], _fd_storage: &mut Vec<RawFdContainer>) -> Result<usize> {
+        fn read(&self, _buf: &mut [u8], _fd_storage: &mut Vec<OwnedFd>) -> Result<usize> {
             unimplemented!();
         }
 
-        fn write(&self, _buf: &[u8], _fds: &mut Vec<RawFdContainer>) -> Result<usize> {
+        fn write(&self, _buf: &[u8], _fds: &mut Vec<OwnedFd>) -> Result<usize> {
             Err(Error::new(ErrorKind::WouldBlock, "would block"))
         }
     }

@@ -221,7 +221,7 @@ fn generate_creator(
             xcbdefs::FieldDef::VirtualLen(_) => unimplemented!(),
             xcbdefs::FieldDef::Fd(fd_field) => {
                 let generic_param = format!("{}", char::from(letter_iter.next().unwrap()));
-                let where_ = format!("{}: Into<RawFdContainer>", generic_param);
+                let where_ = format!("{}: Into<OwnedFd>", generic_param);
                 generics.push(generic_param.clone());
                 wheres.push(where_);
                 (fd_field.name.clone(), generic_param)

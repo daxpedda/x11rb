@@ -23,7 +23,7 @@ use crate::cookie::{Cookie, CookieWithFds, VoidCookie};
 pub use crate::errors::{ConnectError, ConnectionError, ParseError, ReplyError, ReplyOrIdError};
 use crate::extension_manager::ExtensionManager;
 use crate::protocol::xproto::Setup;
-use crate::utils::{CSlice, RawFdContainer};
+use crate::utils::{CSlice, OwnedFd};
 use crate::x11_utils::{ExtensionInformation, TryParse, TryParseFd};
 
 use x11rb_protocol::{DiscardMode, SequenceNumber};
@@ -175,7 +175,7 @@ impl XCBConnection {
     fn send_request(
         &self,
         bufs: &[IoSlice<'_>],
-        fds: Vec<RawFdContainer>,
+        fds: Vec<OwnedFd>,
         has_reply: bool,
         reply_has_fds: bool,
     ) -> Result<SequenceNumber, ConnectionError> {
@@ -225,7 +225,7 @@ impl XCBConnection {
             #[cfg(unix)]
             {
                 // Convert the FDs into an array of ints. libxcb will close the FDs.
-                let mut fds: Vec<_> = fds.into_iter().map(RawFdContainer::into_raw_fd).collect();
+                let mut fds: Vec<_> = fds.into_iter().map(OwnedFd::into_raw_fd).collect();
                 let num_fds = fds.len().try_into().unwrap();
                 let fds_ptr = fds.as_mut_ptr();
                 unsafe {
@@ -241,7 +241,7 @@ impl XCBConnection {
             }
             #[cfg(not(unix))]
             {
-                unreachable!("it is not possible to create a `RawFdContainer` on non-unix");
+                unreachable!("it is not possible to create a `OwnedFd` on non-unix");
             }
         };
         if seqno == 0 {
@@ -362,7 +362,7 @@ impl RequestConnection for XCBConnection {
     fn send_request_with_reply<R>(
         &self,
         bufs: &[IoSlice<'_>],
-        fds: Vec<RawFdContainer>,
+        fds: Vec<OwnedFd>,
     ) -> Result<Cookie<'_, Self, R>, ConnectionError>
     where
         R: TryParse,
@@ -376,7 +376,7 @@ impl RequestConnection for XCBConnection {
     fn send_request_with_reply_with_fds<R>(
         &self,
         bufs: &[IoSlice<'_>],
-        fds: Vec<RawFdContainer>,
+        fds: Vec<OwnedFd>,
     ) -> Result<CookieWithFds<'_, Self, R>, ConnectionError>
     where
         R: TryParseFd,
@@ -390,7 +390,7 @@ impl RequestConnection for XCBConnection {
     fn send_request_without_reply(
         &self,
         bufs: &[IoSlice<'_>],
-        fds: Vec<RawFdContainer>,
+        fds: Vec<OwnedFd>,
     ) -> Result<VoidCookie<'_, Self>, ConnectionError> {
         Ok(VoidCookie::new(
             self,
@@ -475,7 +475,7 @@ impl RequestConnection for XCBConnection {
 
         // The number of FDs is in the second byte (= buffer[1]) in all replies.
         let fd_slice = unsafe { std::slice::from_raw_parts(fd_ptr, usize::from(buffer[1])) };
-        let fd_vec = fd_slice.iter().map(|&fd| RawFdContainer::new(fd)).collect();
+        let fd_vec = fd_slice.iter().map(|&fd| OwnedFd::new(fd)).collect();
 
         Ok(ReplyOrError::Reply((buffer, fd_vec)))
     }

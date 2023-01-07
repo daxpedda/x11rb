@@ -10,7 +10,7 @@ use x11rb::errors::{ConnectionError, ParseError, ReplyError};
 use x11rb::protocol::xproto::{
     ClientMessageData, ConnectionExt, KeymapNotifyEvent, Segment, SetupAuthenticate,
 };
-use x11rb::utils::RawFdContainer;
+use x11rb::utils::OwnedFd;
 use x11rb::x11_utils::{ExtensionInformation, Serialize, TryParse, TryParseFd};
 
 use x11rb_protocol::{DiscardMode, SequenceNumber};
@@ -48,7 +48,7 @@ impl FakeConnection {
     fn internal_send_request(
         &self,
         bufs: &[IoSlice],
-        fds: Vec<RawFdContainer>,
+        fds: Vec<OwnedFd>,
     ) -> Result<SequenceNumber, ConnectionError> {
         assert_eq!(fds.len(), 0);
 
@@ -66,7 +66,7 @@ impl RequestConnection for FakeConnection {
     fn send_request_with_reply<R>(
         &self,
         bufs: &[IoSlice],
-        fds: Vec<RawFdContainer>,
+        fds: Vec<OwnedFd>,
     ) -> Result<Cookie<Self, R>, ConnectionError>
     where
         R: TryParse,
@@ -77,7 +77,7 @@ impl RequestConnection for FakeConnection {
     fn send_request_with_reply_with_fds<R>(
         &self,
         _bufs: &[IoSlice],
-        _fds: Vec<RawFdContainer>,
+        _fds: Vec<OwnedFd>,
     ) -> Result<CookieWithFds<Self, R>, ConnectionError>
     where
         R: TryParseFd,
@@ -88,7 +88,7 @@ impl RequestConnection for FakeConnection {
     fn send_request_without_reply(
         &self,
         bufs: &[IoSlice],
-        fds: Vec<RawFdContainer>,
+        fds: Vec<OwnedFd>,
     ) -> Result<VoidCookie<Self>, ConnectionError> {
         Ok(VoidCookie::new(
             self,

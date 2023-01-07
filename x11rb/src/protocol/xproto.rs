@@ -15,7 +15,7 @@ use std::borrow::Cow;
 #[allow(unused_imports)]
 use std::convert::TryInto;
 #[allow(unused_imports)]
-use crate::utils::RawFdContainer;
+use crate::utils::OwnedFd;
 #[allow(unused_imports)]
 use crate::x11_utils::{Request, RequestHeader, Serialize, TryParse, TryParseFd};
 use std::io::IoSlice;

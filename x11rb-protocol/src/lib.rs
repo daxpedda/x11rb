@@ -58,11 +58,11 @@ pub mod wrapper;
 #[cfg(feature = "std")]
 pub mod xauth;
 
-pub use utils::RawFdContainer;
+pub use utils::OwnedFd;
 
 // Used to avoid too-complex types.
 /// A combination of a buffer and a list of file descriptors.
-pub type BufWithFds<B> = (B, Vec<RawFdContainer>);
+pub type BufWithFds<B> = (B, Vec<OwnedFd>);
 /// A buffer that is logically continuous, but presented in a number of pieces.
 pub type PiecewiseBuf<'a> = Vec<Cow<'a, [u8]>>;
 

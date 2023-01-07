@@ -50,7 +50,7 @@ pub(crate) fn generate(module: &xcbgen::defs::Module) -> Vec<Generated> {
     outln!(main_proto_out, "use alloc::vec::Vec;");
     outln!(main_proto_out, "use core::convert::TryInto;");
     outln!(main_proto_out, "use crate::errors::ParseError;");
-    outln!(main_proto_out, "use crate::RawFdContainer;");
+    outln!(main_proto_out, "use crate::utils::OwnedFd;");
     outln!(
         main_proto_out,
         "use crate::x11_utils::{{TryParse, TryParseFd, X11Error, ReplyRequest, ReplyFDsRequest}};"
@@ -61,14 +61,14 @@ pub(crate) fn generate(module: &xcbgen::defs::Module) -> Vec<Generated> {
     );
     outln!(main_proto_out, "");
 
-    outln!(main_proto_out, "fn parse_reply<'a, R: ReplyRequest>(bytes: &'a [u8], _: &mut Vec<RawFdContainer>) -> Result<(Reply, &'a [u8]), ParseError> {{");
+    outln!(main_proto_out, "fn parse_reply<'a, R: ReplyRequest>(bytes: &'a [u8], _: &mut Vec<OwnedFd>) -> Result<(Reply, &'a [u8]), ParseError> {{");
     main_proto_out.indented(|out| {
         outln!(out, "let (reply, remaining) = R::Reply::try_parse(bytes)?;");
         outln!(out, "Ok((reply.into(), remaining))");
     });
     outln!(main_proto_out, "}}");
     outln!(main_proto_out, "#[allow(dead_code)]");
-    outln!(main_proto_out, "fn parse_reply_fds<'a, R: ReplyFDsRequest>(bytes: &'a [u8], fds: &mut Vec<RawFdContainer>) -> Result<(Reply, &'a [u8]), ParseError> {{");
+    outln!(main_proto_out, "fn parse_reply_fds<'a, R: ReplyFDsRequest>(bytes: &'a [u8], fds: &mut Vec<OwnedFd>) -> Result<(Reply, &'a [u8]), ParseError> {{");
     main_proto_out.indented(|out| {
         outln!(
             out,
