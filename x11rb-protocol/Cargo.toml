@@ -26,9 +26,14 @@ default-features = false
 features = ["fs"]
 optional = true
 
+[target.'cfg(unix)'.dependencies.io-lifetimes]
+version = "1.0.3"
+default-features = false
+optional = true
+
 [features]
 default = ["std"]
-std = ["nix"]
+std = ["nix", "io-lifetimes", "io-lifetimes/close"]
 
 # Enable utility functions in `x11rb::resource_manager` for querying the
 # resource databases.

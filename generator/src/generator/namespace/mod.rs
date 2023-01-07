@@ -1479,6 +1479,8 @@ impl<'ns, 'c> NamespaceGenerator<'ns, 'c> {
                     derives.copy = false;
                     derives.partial_ord = false;
                     derives.ord = false;
+                    derives.partial_eq = false;
+                    derives.eq = false;
                     derives.hash = false;
                     derives.default_ = false;
                 }

@@ -225,6 +225,7 @@ impl XCBConnection {
             #[cfg(unix)]
             {
                 // Convert the FDs into an array of ints. libxcb will close the FDs.
+                use std::os::unix::io::IntoRawFd;
                 let mut fds: Vec<_> = fds.into_iter().map(OwnedFd::into_raw_fd).collect();
                 let num_fds = fds.len().try_into().unwrap();
                 let fds_ptr = fds.as_mut_ptr();
@@ -475,7 +476,9 @@ impl RequestConnection for XCBConnection {
 
         // The number of FDs is in the second byte (= buffer[1]) in all replies.
         let fd_slice = unsafe { std::slice::from_raw_parts(fd_ptr, usize::from(buffer[1])) };
-        let fd_vec = fd_slice.iter().map(|&fd| OwnedFd::new(fd)).collect();
+        // SAFETY: There are no other references to the fd and just needs close() to cleanup.
+        use std::os::unix::io::FromRawFd;
+        let fd_vec = fd_slice.iter().map(|&fd| unsafe { OwnedFd::from_raw_fd(fd) }).collect();
 
         Ok(ReplyOrError::Reply((buffer, fd_vec)))
     }

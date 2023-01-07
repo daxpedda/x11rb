@@ -440,6 +440,7 @@ impl Stream for DefaultStream {
         {
             use nix::sys::socket::{recvmsg, ControlMessageOwned};
             use std::io::IoSliceMut;
+            use std::os::unix::io::FromRawFd;
 
             // Chosen by checking what libxcb does
             const MAX_FDS_RECEIVED: usize = 16;
@@ -462,7 +463,8 @@ impl Stream for DefaultStream {
                     ControlMessageOwned::ScmRights(r) => r,
                     _ => Vec::new(),
                 })
-                .map(OwnedFd::new);
+                // SAFETY: There are no other references to the fd and just needs close() to cleanup.
+                .map(|fd| unsafe { OwnedFd::from_raw_fd(fd) });
 
             let mut cloexec_error = Ok(());
             fd_storage.extend(recvmsg::after_recvmsg(fds_received, &mut cloexec_error));
@@ -553,6 +555,7 @@ impl Stream for DefaultStream {
 fn connect_abstract_unix_stream(path: &[u8]) -> nix::Result<OwnedFd> {
     use nix::fcntl::{fcntl, FcntlArg, OFlag};
     use nix::sys::socket::{connect, socket, AddressFamily, SockFlag, SockType, UnixAddr};
+    use std::os::unix::io::FromRawFd;
 
     let socket = socket(
         AddressFamily::Unix,
@@ -563,7 +566,8 @@ fn connect_abstract_unix_stream(path: &[u8]) -> nix::Result<OwnedFd> {
 
     // Wrap it in a OwnedFd. Its Drop impl makes sure to close the socket if something
     // errors out below.
-    let socket = OwnedFd::new(socket);
+    // SAFETY: There are no other references to the fd and just needs close() to cleanup.
+    let socket = unsafe { OwnedFd::from_raw_fd(socket) };
 
     connect(socket.as_raw_fd(), &UnixAddr::new_abstract(path)?)?;
 

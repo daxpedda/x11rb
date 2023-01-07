@@ -2,79 +2,17 @@
 //!
 //! # OwnedFd
 //!
-//! [`OwnedFd`] is a variant of [`std::os::unix::io::RawFd`] with ownership semantics. This
-//! means that the `RawFd` will be closed when the `OwnedFd` is dropped.
+//! [`OwnedFd`] is supposed to be the same as [`std::os::fd::OwnedFd`], but available on older Rust
+//! versions.
 //!
-//! On non-`cfg(unix)`-systems, this is an empty type without methods. It still exists as a type so
-//! that it can appear in interfaces, but it is not actually possible to construct an instance of
-//! `OwnedFd`.
+//! On non-`cfg(unix)`-systems, this is an empty type without methods instead. It still exists as a
+//! type so that it can appear in interfaces, but it is not actually possible to construct an
+//! instance of `OwnedFd`.
 
 #[cfg(all(feature = "std", unix))]
 mod owned_fd {
-    use std::mem::forget;
-    use std::os::unix::io::{AsRawFd, IntoRawFd, RawFd};
-
-    /// A simple wrapper around RawFd that closes the fd on drop.
-    ///
-    /// On non-unix systems, this type is empty and does not provide
-    /// any method.
-    #[derive(Debug, Hash, PartialEq, Eq)]
-    pub struct OwnedFd(RawFd);
-
-    impl Drop for OwnedFd {
-        fn drop(&mut self) {
-            let _ = nix::unistd::close(self.0);
-        }
-    }
-
-    impl OwnedFd {
-        /// Create a new `OwnedFd` for the given `RawFd`.
-        ///
-        /// The `OwnedFd` takes ownership of the `RawFd` and closes it on drop.
-        pub fn new(fd: RawFd) -> Self {
-            OwnedFd(fd)
-        }
-
-        /// Tries to clone the `OwnedFd` creating a new FD
-        /// with `dup`. The new `OwnedFd` will take ownership
-        /// of the `dup`ed version, whereas the original `OwnedFd`
-        /// will keep the ownership of its FD.
-        pub fn try_clone(&self) -> Result<Self, std::io::Error> {
-            Ok(Self::new(nix::unistd::dup(self.0)?))
-        }
-
-        /// Get the `RawFd` out of this `OwnedFd`.
-        ///
-        /// This function would be an implementation of `IntoRawFd` if that were possible. However, it
-        /// causes a conflict with an `impl` from libcore...
-        pub fn into_raw_fd(self) -> RawFd {
-            let fd = self.0;
-            forget(self);
-            fd
-        }
-
-        /// Consumes the `OwnedFd` and closes the wrapped FD with
-        /// the `close` system call.
-        ///
-        /// This is similar to dropping the `OwnedFd`, but it allows
-        /// the caller to handle errors.
-        pub fn close(self) -> Result<(), std::io::Error> {
-            let fd = self.into_raw_fd();
-            nix::unistd::close(fd).map_err(|e| e.into())
-        }
-    }
-
-    impl<T: IntoRawFd> From<T> for OwnedFd {
-        fn from(fd: T) -> Self {
-            Self::new(fd.into_raw_fd())
-        }
-    }
-
-    impl AsRawFd for OwnedFd {
-        fn as_raw_fd(&self) -> RawFd {
-            self.0
-        }
-    }
+    /// An owned file descriptor that closes the file descriptor on drop.
+    pub type OwnedFd = io_lifetimes::OwnedFd;
 }
 
 #[cfg(not(all(feature = "std", unix)))]

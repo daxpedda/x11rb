@@ -858,7 +858,7 @@ impl crate::x11_utils::VoidRequest for CreatePixmapRequest {
 
 /// Opcode for the AttachFd request
 pub const ATTACH_FD_REQUEST: u8 = 6;
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug)]
 pub struct AttachFdRequest {
     pub shmseg: Seg,
     pub shm_fd: OwnedFd,
@@ -992,7 +992,7 @@ impl crate::x11_utils::ReplyFDsRequest for CreateSegmentRequest {
     type Reply = CreateSegmentReply;
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug)]
 pub struct CreateSegmentReply {
     pub nfd: u8,
     pub sequence: u16,
